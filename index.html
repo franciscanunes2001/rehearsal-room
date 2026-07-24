@@ -613,60 +613,37 @@ function esc(str){
 }
 
 /* ---------------- Screen: Auth ---------------- */
+async function signInWithGoogle(){
+  AUTH_ERROR = ''; AUTH_NOTICE = '';
+  AUTH_BUSY = true; render();
+  const redirectTo = `${window.location.origin}${window.location.pathname}`;
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo }
+  });
+  AUTH_BUSY = false;
+  if(error){ AUTH_ERROR = error.message; render(); }
+}
+
 function renderAuth(){
-  const isSignup = AUTH_MODE === 'signup';
   return `
   <div class="setup-wrap" style="max-width:420px; padding-top:40px;">
-    <span class="eyebrow">${isSignup ? 'Create an account' : 'Welcome back'}</span>
-    <h1 style="font-size:26px; margin-bottom:6px;">${isSignup ? 'Sign up to save your rehearsals' : 'Sign in'}</h1>
-    <p class="muted" style="margin-bottom:22px;">${isSignup ? 'Your scenarios and transcripts stay private to your account.' : 'Pick up where you left off.'}</p>
+    <span class="eyebrow">Continue with Google</span>
+    <h1 style="font-size:26px; margin-bottom:6px;">Sign in or create your account</h1>
+    <p class="muted" style="margin-bottom:22px;">Use your Google account to save your rehearsals and keep everything private to you.</p>
     <div class="card">
-      <div class="field">
-        <label>Email</label>
-        <input type="text" id="auth-email" placeholder="you@example.com" autocomplete="email">
-      </div>
-      <div class="field">
-        <label>Password</label>
-        <input type="password" id="auth-password" placeholder="At least 6 characters" autocomplete="${isSignup?'new-password':'current-password'}">
-      </div>
       ${AUTH_ERROR ? `<div style="color:var(--clay); font-size:13px; margin-bottom:14px;">${esc(AUTH_ERROR)}</div>` : ''}
       ${AUTH_NOTICE ? `<div style="color:var(--teal); font-size:13px; margin-bottom:14px;">${esc(AUTH_NOTICE)}</div>` : ''}
-      <div class="actions-row split">
-        <button class="btn-text" id="auth-toggle">${isSignup ? 'Already have an account? Sign in' : 'Need an account? Sign up'}</button>
-        <button class="btn btn-primary" id="auth-submit" ${AUTH_BUSY?'disabled':''}>${AUTH_BUSY ? 'Please wait…' : (isSignup ? 'Sign up' : 'Sign in')}</button>
-      </div>
+      <button class="btn" id="auth-google" type="button" style="width:100%; justify-content:center; gap:10px; background:#fff; color:#1f1f1f; border:1px solid #d8dce3; box-shadow:0 2px 8px rgba(0,0,0,0.08);" ${AUTH_BUSY?'disabled':''}>
+        <span style="font-size:16px; line-height:1;">G</span>
+        <span>${AUTH_BUSY ? 'Please wait…' : 'Continue with Google'}</span>
+      </button>
     </div>
   </div>`;
 }
 
 function attachAuthHandlers(){
-  document.getElementById('auth-toggle').onclick = ()=>{
-    AUTH_MODE = AUTH_MODE === 'signin' ? 'signup' : 'signin';
-    AUTH_ERROR = ''; AUTH_NOTICE = '';
-    render();
-  };
-  const submit = async ()=>{
-    const email = document.getElementById('auth-email').value.trim();
-    const password = document.getElementById('auth-password').value;
-    AUTH_ERROR = ''; AUTH_NOTICE = '';
-    if(!email || !password){ AUTH_ERROR = 'Enter both an email and a password.'; render(); return; }
-    AUTH_BUSY = true; render();
-    if(AUTH_MODE === 'signup'){
-      const { error } = await supabase.auth.signUp({ email, password });
-      AUTH_BUSY = false;
-      if(error){ AUTH_ERROR = error.message; render(); return; }
-      AUTH_NOTICE = 'Account created. Check your email to confirm, then sign in.';
-      AUTH_MODE = 'signin';
-      render();
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      AUTH_BUSY = false;
-      if(error){ AUTH_ERROR = error.message; render(); return; }
-      // onAuthStateChange will load data and re-render
-    }
-  };
-  document.getElementById('auth-submit').onclick = submit;
-  document.getElementById('auth-password').addEventListener('keydown', (e)=>{ if(e.key==='Enter') submit(); });
+  document.getElementById('auth-google').onclick = signInWithGoogle;
 }
 
 /* ---------------- Event wiring ---------------- */
