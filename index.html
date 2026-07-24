@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Rehearsal Room — Raise Negotiation Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0A0B0D;
+    --bg-deep: #050608;
+    --surface: #15171C;
+    --surface-2: #1C1F26;
+    --surface-hover: #22252D;
+    --card: #15171C;
+    --ink: #F1F1F3;
+    --ink-soft: #A2A6B0;
+    --ink-faint: #62666F;
+    --amber: #F0B94D;
+    --amber-soft: rgba(240,185,77,0.14);
+    --amber-glow: rgba(240,185,77,0.35);
+    --teal: #45C4B0;
+    --teal-soft: rgba(69,196,176,0.13);
+    --clay: #E2795F;
+    --clay-soft: rgba(226,121,95,0.14);
+    --line: #262931;
+    --line-soft: #1D2027;
+    --line-strong: #34384260;
+    --shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 12px 32px rgba(0,0,0,0.45);
+    --shadow-sm: 0 1px 0 rgba(255,255,255,0.02) inset, 0 4px 14px rgba(0,0,0,0.35);
+    --font-display: 'Fraunces', serif;
+    --font-body: 'Inter', -apple-system, sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+    --radius: 16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    background-image:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(240,185,77,0.09), transparent 60%),
+      radial-gradient(ellipse 800px 600px at 100% 10%, rgba(69,196,176,0.07), transparent 55%),
+      radial-gradient(ellipse 700px 500px at 50% 100%, rgba(226,121,95,0.05), transparent 60%);
+    background-attachment:fixed;
+    color:var(--ink);
+    font-family:var(--font-body);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--amber-glow); color:#1a1300;}
+  ::-webkit-scrollbar{width:10px; height:10px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:#2C2F38; border-radius:8px; border:2px solid var(--bg);}
+  ::-webkit-scrollbar-thumb:hover{background:#3A3E48;}
+  button{font-family:var(--font-body); cursor:pointer;}
+  textarea, input, select{font-family:var(--font-body); color-scheme:dark;}
+  a{color:inherit;}
+
+  .app{max-width:1180px; margin:0 auto; padding:32px 24px 80px;}
+
+  /* Header */
+  .topbar{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:40px; padding-bottom:20px; border-bottom:1px solid var(--line);}
+  .brand{display:flex; align-items:baseline; gap:10px;}
+  .brand-mark{font-family:var(--font-display); font-weight:600; font-size:22px; letter-spacing:-0.01em; color:var(--ink); background:linear-gradient(90deg,#fff,#c9cdd6); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .brand-sub{font-family:var(--font-mono); font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-faint);}
+  .nav-steps{display:flex; gap:8px; font-family:var(--font-mono); font-size:11px; letter-spacing:0.04em; text-transform:uppercase;}
+  .nav-steps span{color:var(--ink-faint); padding:7px 13px; border-radius:999px; border:1px solid transparent; transition:all .15s ease;}
+  .nav-steps span.active{color:#1a1300; background:var(--amber); font-weight:600; box-shadow:0 0 0 1px var(--amber), 0 0 18px var(--amber-glow);}
+  .nav-steps span.done{color:var(--ink-soft); border-color:var(--line);}
+
+  h1,h2,h3{font-family:var(--font-display); font-weight:600; margin:0; color:var(--ink);}
+  .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--amber); margin-bottom:8px; display:block;}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:32px;}
+  .muted{color:var(--ink-soft); font-size:14px; line-height:1.6;}
+
+  /* ---- Setup ---- */
+  .setup-wrap{max-width:680px; margin:0 auto;}
+  .field{margin-bottom:20px;}
+  .field label{display:block; font-size:13px; font-weight:600; margin-bottom:7px; color:var(--ink);}
+  .field .hint{font-size:12.5px; color:var(--ink-faint); margin-top:5px;}
+  .field input[type=text], .field textarea, .field select{
+    width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:10px;
+    background:var(--surface-2); font-size:14.5px; color:var(--ink); resize:vertical; transition:border-color .12s ease, box-shadow .12s ease;
+  }
+  .field input::placeholder, .field textarea::placeholder{color:var(--ink-faint);}
+  .field input:focus, .field textarea:focus, .field select:focus{outline:none; border-color:var(--amber); box-shadow:0 0 0 3px var(--amber-soft);}
+  .field textarea{min-height:70px; line-height:1.5;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .chip-group{display:flex; flex-wrap:wrap; gap:9px;}
+  .chip{
+    padding:8px 15px; border:1px solid var(--line); border-radius:999px; font-size:13px;
+    background:var(--surface-2); color:var(--ink-soft); transition:all .12s ease; user-select:none;
+  }
+  .chip:hover{border-color:var(--ink-faint); color:var(--ink);}
+  .chip.selected{background:var(--amber-soft); color:var(--amber); border-color:var(--amber);}
+  .divider{height:1px; background:var(--line); margin:26px 0;}
+  .btn{
+    font-weight:600; font-size:14.5px; padding:13px 26px; border-radius:10px; border:none;
+    display:inline-flex; align-items:center; gap:8px; transition:transform .08s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--amber); color:#1a1300; box-shadow:0 4px 20px rgba(240,185,77,0.25);}
+  .btn-primary:hover{background:#f5c66a; box-shadow:0 4px 26px rgba(240,185,77,0.4);}
+  .btn-primary:disabled{background:var(--surface-2); color:var(--ink-faint); box-shadow:none; cursor:not-allowed;}
+  .btn-ghost{background:transparent; color:var(--ink-soft); border:1px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--ink-faint); color:var(--ink); background:var(--surface-2);}
+  .btn-text{background:none; border:none; color:var(--teal); font-weight:600; font-size:13.5px; padding:6px 2px;}
+  .btn-text:hover{color:#6fd8c6;}
+  .actions-row{display:flex; justify-content:flex-end; gap:12px; margin-top:8px;}
+  .actions-row.split{justify-content:space-between;}
+
+  /* ---- Plan ---- */
+  .plan-grid{display:grid; grid-template-columns:1fr; gap:14px;}
+  .plan-section{border:1px solid var(--line-soft); border-left:3px solid var(--teal); border-radius:12px; padding:18px 20px; background:var(--surface); position:relative;}
+  .plan-section h3{font-size:14.5px; font-family:var(--font-body); font-weight:700; color:var(--teal); margin-bottom:10px; letter-spacing:0.01em;}
+  .plan-section ul{margin:0; padding-left:18px;}
+  .plan-section li{margin-bottom:8px; line-height:1.55; font-size:14.5px; color:var(--ink);}
+  .plan-section li[contenteditable]{outline:none; border-radius:5px; padding:2px 4px; margin-left:-4px;}
+  .plan-section li[contenteditable]:hover{background:var(--surface-2);}
+  .plan-section li[contenteditable]:focus{background:var(--surface-2); box-shadow:0 0 0 2px var(--teal);}
+  .reminder-block{border:1px solid var(--amber); border-radius:12px; padding:16px 20px; background:var(--amber-soft); font-size:13.5px; color:#f4d99a; font-family:var(--font-mono); line-height:1.75;}
+  .loading-row{display:flex; align-items:center; gap:10px; color:var(--ink-soft); font-size:14px; padding:40px 0; justify-content:center;}
+  .spinner{width:16px; height:16px; border-radius:50%; border:2px solid var(--line); border-top-color:var(--amber); animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ---- Live simulation ---- */
+  .live-layout{display:grid; grid-template-columns:1fr 360px; gap:20px; align-items:start;}
+  @media (max-width: 880px){ .live-layout{grid-template-columns:1fr;} }
+  .chat-card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); display:flex; flex-direction:column; height:640px; overflow:hidden;}
+  .chat-head{padding:17px 22px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; background:linear-gradient(180deg, var(--surface-2), var(--card));}
+  .chat-head .who{font-family:var(--font-display); font-weight:600; font-size:16.5px;}
+  .chat-head .disposition{font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.04em;}
+  .chat-scroll{flex:1; overflow-y:auto; padding:22px; display:flex; flex-direction:column; gap:14px;}
+  .msg{max-width:78%; padding:12px 16px; border-radius:14px; font-size:14.5px; line-height:1.55;}
+  .msg.you{align-self:flex-end; background:linear-gradient(135deg, #F0B94D, #E2795F); color:#241a06; border-bottom-right-radius:4px; font-weight:500;}
+  .msg.them{align-self:flex-start; background:var(--surface-2); color:var(--ink); border:1px solid var(--line-soft); border-bottom-left-radius:4px;}
+  .msg .role-tag{display:block; font-family:var(--font-mono); font-size:10px; letter-spacing:.05em; text-transform:uppercase; opacity:.65; margin-bottom:4px;}
+  .chat-input-row{display:flex; gap:10px; padding:16px; border-top:1px solid var(--line); background:var(--surface);}
+  .chat-input-row textarea{flex:1; border:1px solid var(--line); border-radius:10px; padding:11px 14px; font-size:14px; resize:none; min-height:46px; max-height:120px; background:var(--surface-2); color:var(--ink);}
+  .chat-input-row textarea:focus{outline:none; border-color:var(--amber); box-shadow:0 0 0 3px var(--amber-soft);}
+  .chat-input-row .btn-primary{align-self:flex-end;}
+  .typing{align-self:flex-start; color:var(--ink-faint); font-size:13px; font-style:italic;}
+
+  .sidebar{display:flex; flex-direction:column; gap:16px;}
+  .side-card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-sm); padding:18px 20px;}
+  .side-card h4{font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-faint); margin:0 0 12px; display:flex; align-items:center; justify-content:space-between;}
+  .side-card.plan-ref .plan-section{padding:12px 14px; font-size:13px; margin-bottom:10px; background:var(--surface-2);}
+  .side-card.plan-ref .plan-section h3{font-size:12px;}
+  .side-card.plan-ref .plan-section li{font-size:12.5px; margin-bottom:5px; color:var(--ink-soft);}
+  .collapsible-toggle{background:none; border:none; color:var(--teal); font-size:11.5px; font-weight:600; padding:0; margin-bottom:8px;}
+
+  .tag-note{display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--line-soft); font-size:13px; line-height:1.45;}
+  .tag-note:last-child{border-bottom:none; padding-bottom:0;}
+  .tag-dot{width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0; box-shadow:0 0 8px currentColor;}
+  .tag-dot.anchor{background:var(--amber); color:var(--amber-glow);}
+  .tag-dot.pushback{background:var(--clay); color:rgba(226,121,95,0.4);}
+  .tag-dot.term{background:var(--teal); color:rgba(69,196,176,0.4);}
+  .tag-note .tag-text{color:var(--ink-soft);}
+  .empty-note{color:var(--ink-faint); font-size:13px; font-style:italic;}
+
+  .leave-btn{width:100%; background:transparent; border:1px solid var(--clay); color:var(--clay); font-weight:600; padding:12px; border-radius:10px; font-size:13.5px; transition:all .15s ease;}
+  .leave-btn:hover{background:var(--clay-soft); box-shadow:0 0 16px rgba(226,121,95,0.15);}
+
+  /* ---- History ---- */
+  .history-header{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:26px;}
+  .scenario-group{margin-bottom:30px;}
+  .scenario-group-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; padding-bottom:9px; border-bottom:1px solid var(--line);}
+  .scenario-group-head .g-title{font-family:var(--font-display); font-size:17px; font-weight:600;}
+  .scenario-group-head .g-meta{font-family:var(--font-mono); font-size:11px; color:var(--ink-faint); text-transform:uppercase;}
+  .attempt-row{display:grid; grid-template-columns:110px 1fr 180px 160px; gap:14px; align-items:center; padding:15px 18px; border-radius:12px; border:1px solid var(--line-soft); background:var(--surface); margin-bottom:8px; cursor:pointer; transition:all .12s ease;}
+  .attempt-row:hover{border-color:var(--amber); background:var(--surface-hover); box-shadow:0 0 0 1px rgba(240,185,77,0.15);}
+  .attempt-date{font-family:var(--font-mono); font-size:12px; color:var(--ink-faint);}
+  .attempt-framework{font-size:13px; color:var(--ink-soft);}
+  .attempt-outcome{font-size:13px; font-weight:600; color:var(--teal);}
+  .attempt-outcome.pending{color:var(--ink-faint); font-weight:400; font-style:italic;}
+  @media (max-width:700px){ .attempt-row{grid-template-columns:1fr;} }
+
+  .empty-state{text-align:center; padding:90px 20px; color:var(--ink-soft);}
+  .empty-state .eyebrow{display:block; margin-bottom:10px; text-align:center;}
+
+  .detail-header{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px;}
+  .detail-transcript{max-height:400px; overflow-y:auto; border:1px solid var(--line); border-radius:12px; padding:16px; background:var(--surface); margin-top:14px;}
+  .back-link{background:none; border:none; color:var(--ink-soft); font-size:13px; margin-bottom:18px; padding:0; font-weight:500;}
+  .back-link:hover{color:var(--amber);}
+
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+  @media (max-width:800px){ .two-col{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+/* ---------------- Supabase config ---------------- */
+/* Replace these two with the values from Supabase > Project Settings > API.
+   The anon key is safe to expose here — row-level security restricts access. */
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ---------------- Auth state ---------------- */
+let SESSION = null;
+let AUTH_MODE = 'signin'; // 'signin' | 'signup'
+let AUTH_ERROR = '';
+let AUTH_NOTICE = '';
+let AUTH_BUSY = false;
+
+async function initAuth(){
+  const { data: { session } } = await supabase.auth.getSession();
+  SESSION = session;
+  supabase.auth.onAuthStateChange(async (_event, session)=>{
+    const hadSession = !!SESSION;
+    SESSION = session;
+    if(SESSION && !hadSession){ await loadData(); }
+    if(!SESSION){ DATA = { scenarios: [], attempts: [] }; draft = null; VIEW = 'setup'; }
+    render();
+  });
+}
+
+/* ---------------- Data layer (Supabase-backed) ---------------- */
+let DATA = { scenarios: [], attempts: [] };
+
+async function loadData(){
+  if(!SESSION) return;
+  try{
+    const [{ data: scenarios, error: e1 }, { data: attempts, error: e2 }] = await Promise.all([
+      supabase.from('scenarios').select('*').order('created_at', { ascending: true }),
+      supabase.from('attempts').select('*').order('created_at', { ascending: true })
+    ]);
+    if(e1) console.error(e1);
+    if(e2) console.error(e2);
+    DATA.scenarios = (scenarios||[]).map(s=>({
+      id: s.id, name: s.name, title: s.title, goal: s.goal,
+      mgrName: s.mgr_name, mgrDisp: s.mgr_disp, groupKey: s.group_key
+    }));
+    DATA.attempts = (attempts||[]).map(a=>({
+      id: a.id, scenarioId: a.scenario_id, framework: a.framework, concepts: a.concepts,
+      plan: a.plan, transcript: a.transcript, summaryTags: a.summary_tags,
+      outcome: a.outcome, status: a.status, createdAt: new Date(a.created_at).getTime()
+    }));
+  }catch(e){ console.error('loadData failed', e); }
+}
+
+async function createScenario(prefill, groupKey){
+  const { data, error } = await supabase.from('scenarios').insert({
+    user_id: SESSION.user.id, name: prefill.name, title: prefill.title, goal: prefill.goal,
+    mgr_name: prefill.mgrName || null, mgr_disp: prefill.mgrDisp || null, group_key: groupKey
+  }).select().single();
+  if(error){ console.error(error); return null; }
+  const sc = { id:data.id, name:data.name, title:data.title, goal:data.goal, mgrName:data.mgr_name, mgrDisp:data.mgr_disp, groupKey:data.group_key };
+  DATA.scenarios.push(sc);
+  return sc;
+}
+
+function uid(){ return crypto.randomUUID(); }
+function groupKeyFor(name,title,goal){
+  return (name.trim()+'|'+title.trim()+'|'+goal.trim()).toLowerCase();
+}
+
+/* ---------------- AI helper (routed through our serverless proxy) ---------------- */
+async function askAI(system, messages, wantJSON){
+  let text = '';
+  try{
+    const res = await fetch('/api/negotiate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system, messages })
+    });
+    const data = await res.json();
+    if(!res.ok){ console.error('AI proxy error', data); }
+    text = data.text || '';
+  }catch(e){ console.error('askAI failed', e); }
+
+  if(wantJSON){
+    const cleaned = text.replace(/```json/g,'').replace(/```/g,'').trim();
+    try{ return JSON.parse(cleaned); }
+    catch(e){
+      const match = cleaned.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
+      if(match){ try{ return JSON.parse(match[0]); }catch(e2){} }
+      return null;
+    }
+  }
+  return text;
+}
+
+/* ---------------- App state ---------------- */
+let VIEW = 'setup'; // setup | plan | live | history | detail
+let draft = null;     // in-progress setup+plan+attempt object being built
+let historyDetail = null; // attempt id being viewed read-only
+let planLoading = false;
+let liveLoading = false;
+let summaryLoading = false;
+
+const FRAMEWORKS = [
+  { id: 'seven', label: 'Seven Elements' },
+  { id: 'core', label: 'Core Concerns' },
+  { id: 'anchor', label: 'Anchor & Legitimacy' },
+  { id: 'multi', label: 'Multi-issue Expansion' },
+  { id: 'two', label: '2 Elements (Interests + BATNA)' }
+];
+const CONCEPTS = ['Anchoring high','Conceding too fast','Single-issue price lock','Revealing urgency'];
+
+function frameworkLabel(id){
+  const f = FRAMEWORKS.find(f=>f.id===id);
+  return f ? f.label : '2 Elements (Interests + BATNA)';
+}
+
+/* ---------------- Render root ---------------- */
+function render(){
+  const app = document.getElementById('app');
+
+  if(!SESSION){
+    app.innerHTML = `
+      <div class="topbar">
+        <div class="brand">
+          <span class="brand-mark">The Rehearsal Room</span>
+          <span class="brand-sub">Raise negotiation practice</span>
+        </div>
+      </div>
+      <div id="screen"></div>
+    `;
+    document.getElementById('screen').innerHTML = renderAuth();
+    attachAuthHandlers();
+    return;
+  }
+
+  app.innerHTML = `
+    <div class="topbar">
+      <div class="brand">
+        <span class="brand-mark">The Rehearsal Room</span>
+        <span class="brand-sub">Raise negotiation practice</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:20px;">
+        <div class="nav-steps">
+          <span class="${stepClass('setup')}">1 · Setup</span>
+          <span class="${stepClass('plan')}">2 · Plan</span>
+          <span class="${stepClass('live')}">3 · Simulation</span>
+          <span class="${stepClass('history')}">4 · History</span>
+        </div>
+        <button class="btn-text" id="btn-sign-out" style="color:var(--ink-faint);" title="${esc(SESSION.user.email)}">Sign out</button>
+      </div>
+    </div>
+    <div id="screen"></div>
+  `;
+  document.getElementById('btn-sign-out').onclick = async ()=>{ await supabase.auth.signOut(); };
+  const screen = document.getElementById('screen');
+  if(VIEW==='setup') screen.innerHTML = renderSetup();
+  else if(VIEW==='plan') screen.innerHTML = renderPlan();
+  else if(VIEW==='live') screen.innerHTML = renderLive();
+  else if(VIEW==='history') screen.innerHTML = renderHistory();
+  else if(VIEW==='detail') screen.innerHTML = renderDetail();
+  attachHandlers();
+}
+function stepClass(name){
+  const order = ['setup','plan','live','history'];
+  if(VIEW==='detail') return name==='history' ? 'active' : (order.indexOf(name) < order.indexOf('history') ? 'done' : '');
+  if(name===VIEW) return 'active';
+  return order.indexOf(name) < order.indexOf(VIEW) ? 'done' : '';
+}
+
+/* ---------------- Screen: Setup ---------------- */
+function renderSetup(){
+  const p = draft && draft.prefill ? draft.prefill : {};
+  return `
+  <div class="setup-wrap">
+    <span class="eyebrow">Before you sit down at the table</span>
+    <h1 style="font-size:28px; margin-bottom:6px;">Set the scene</h1>
+    <p class="muted" style="margin-bottom:26px;">A few details about you and the ask. This stays private to this rehearsal.</p>
+    <div class="card">
+      <div class="row2">
+        <div class="field">
+          <label>Your name</label>
+          <input type="text" id="f-name" value="${esc(p.name||'')}" placeholder="Francisca">
+        </div>
+        <div class="field">
+          <label>Your title</label>
+          <input type="text" id="f-title" value="${esc(p.title||'')}" placeholder="Senior Consultant">
+        </div>
+      </div>
+      <div class="field">
+        <label>Current goal of the raise</label>
+        <textarea id="f-goal" placeholder="e.g. Asking for 12% based on new client-lead scope taken on since March">${esc(p.goal||'')}</textarea>
+        <div class="hint">Target % or number, or the trigger — promotion, market correction, new scope.</div>
+      </div>
+      <div class="divider"></div>
+      <div class="row2">
+        <div class="field">
+          <label>Manager's name <span class="muted">(optional)</span></label>
+          <input type="text" id="f-mgr-name" value="${esc(p.mgrName||'')}" placeholder="Diane">
+        </div>
+        <div class="field">
+          <label>Manager's likely disposition <span class="muted">(optional)</span></label>
+          <input type="text" id="f-mgr-disp" value="${esc(p.mgrDisp||'')}" placeholder="Budget-constrained, avoids confrontation">
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="field">
+        <label>Framework to test <span class="muted">(optional — defaults to 2 Elements)</span></label>
+        <select id="f-framework">
+          <option value="">— No preference (2 Elements Framework) —</option>
+          ${FRAMEWORKS.filter(f=>f.id!=='two').map(f=>`<option value="${f.id}" ${draft&&draft.framework===f.id?'selected':''}>${f.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>Concepts to stress-test <span class="muted">(optional)</span></label>
+        <div class="chip-group" id="concept-chips">
+          ${CONCEPTS.map(c=>`<div class="chip" data-concept="${esc(c)}">${esc(c)}</div>`).join('')}
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="actions-row">
+        <button class="btn btn-primary" id="btn-build-plan">Build my plan →</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------------- Screen: Plan ---------------- */
+function renderPlan(){
+  if(planLoading){
+    return `<div class="setup-wrap"><div class="card"><div class="loading-row"><div class="spinner"></div> Drafting your prep plan…</div></div></div>`;
+  }
+  if(!draft || !draft.plan){
+    return `<div class="setup-wrap"><div class="card"><p class="muted">No plan yet.</p></div></div>`;
+  }
+  const p = draft.plan;
+  return `
+  <div class="setup-wrap">
+    <span class="eyebrow">${esc(frameworkLabel(draft.framework))}</span>
+    <h1 style="font-size:26px; margin-bottom:6px;">Your prep plan</h1>
+    <p class="muted" style="margin-bottom:22px;">Tap any line to edit it before you start. This stays visible during the simulation.</p>
+    <div class="plan-grid">
+      ${p.sections.map((s,si)=>`
+        <div class="plan-section">
+          <h3>${esc(s.title)}</h3>
+          <ul>
+            ${s.bullets.map((b,bi)=>`<li contenteditable="true" data-si="${si}" data-bi="${bi}">${esc(b)}</li>`).join('')}
+          </ul>
+        </div>
+      `).join('')}
+      <div class="reminder-block">
+        Concessions should feel costly — trade, don't donate.<br>
+        Decreasing concession size signals your limit is near.
+      </div>
+    </div>
+    <div class="actions-row split" style="margin-top:22px;">
+      <button class="btn btn-ghost" id="btn-back-setup">← Back to setup</button>
+      <button class="btn btn-primary" id="btn-start-negotiation">Start negotiation →</button>
+    </div>
+  </div>`;
+}
+
+/* ---------------- Screen: Live ---------------- */
+function renderLive(){
+  const a = draft;
+  const transcript = a.transcript || [];
+  const mgrName = a.prefill.mgrName || 'your manager';
+  const mgrDisp = a.prefill.mgrDisp || 'Disposition not specified';
+  return `
+  <div class="live-layout">
+    <div class="chat-card">
+      <div class="chat-head">
+        <div>
+          <div class="who">${esc(mgrName)}</div>
+          <div class="disposition">${esc(mgrDisp)}</div>
+        </div>
+        <div class="disposition">Live rehearsal</div>
+      </div>
+      <div class="chat-scroll" id="chat-scroll">
+        ${transcript.length===0 ? `<div class="empty-note">Open with your ask, or ease into it — your call. ${esc(mgrName)} is listening.</div>` : ''}
+        ${transcript.map(m=>`
+          <div class="msg ${m.role==='user'?'you':'them'}">
+            <span class="role-tag">${m.role==='user'?'You':esc(mgrName)}</span>${esc(m.text)}
+          </div>
+        `).join('')}
+        ${liveLoading ? `<div class="typing">${esc(mgrName)} is thinking…</div>` : ''}
+      </div>
+      <div class="chat-input-row">
+        <textarea id="chat-input" placeholder="Type what you'd say next…" ${liveLoading?'disabled':''}></textarea>
+        <button class="btn btn-primary" id="btn-send" ${liveLoading?'disabled':''}>Send</button>
+      </div>
+    </div>
+    <div class="sidebar">
+      <div class="side-card plan-ref">
+        <h4>The plan</h4>
+        <button class="collapsible-toggle" id="toggle-plan">${a.planCollapsed? 'Show ▾' : 'Hide ▴'}</button>
+        ${a.planCollapsed ? '' : a.plan.sections.map(s=>`
+          <div class="plan-section">
+            <h3>${esc(s.title)}</h3>
+            <ul>${s.bullets.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>
+          </div>
+        `).join('')}
+      </div>
+      <div class="side-card">
+        <h4>Live summary ${summaryLoading?'· updating…':''}</h4>
+        ${(a.summaryTags && a.summaryTags.length) ? a.summaryTags.map(t=>`
+          <div class="tag-note">
+            <div class="tag-dot ${t.type||'term'}"></div>
+            <div class="tag-text">${esc(t.text)}</div>
+          </div>
+        `).join('') : '<div class="empty-note">Nothing tracked yet — it fills in as you talk.</div>'}
+      </div>
+      <button class="leave-btn" id="btn-leave">Leave negotiation</button>
+    </div>
+  </div>`;
+}
+
+/* ---------------- Screen: History ---------------- */
+function renderHistory(){
+  if(DATA.attempts.length===0){
+    return `
+    <div class="empty-state">
+      <span class="eyebrow">Nothing rehearsed yet</span>
+      <h2 style="font-size:22px; margin-bottom:14px;">Your past attempts will collect here</h2>
+      <p class="muted" style="margin-bottom:24px;">Run a negotiation once and it'll show up in this history, grouped by scenario.</p>
+      <button class="btn btn-primary" id="btn-new-scenario">Start a scenario →</button>
+    </div>`;
+  }
+  const groups = {};
+  DATA.scenarios.forEach(s=>{ groups[s.groupKey] = { meta: s, attempts: [] }; });
+  DATA.attempts.slice().sort((a,b)=>b.createdAt-a.createdAt).forEach(at=>{
+    const sc = DATA.scenarios.find(s=>s.id===at.scenarioId);
+    if(!sc) return;
+    if(!groups[sc.groupKey]) groups[sc.groupKey] = { meta: sc, attempts: [] };
+    groups[sc.groupKey].attempts.push(at);
+  });
+  const groupList = Object.values(groups).filter(g=>g.attempts.length>0)
+    .sort((a,b)=> Math.max(...b.attempts.map(x=>x.createdAt)) - Math.max(...a.attempts.map(x=>x.createdAt)) );
+
+  return `
+  <div>
+    <div class="history-header">
+      <div>
+        <span class="eyebrow">Past rehearsals</span>
+        <h1 style="font-size:26px;">History</h1>
+      </div>
+      <button class="btn btn-primary" id="btn-new-scenario">New scenario →</button>
+    </div>
+    ${groupList.map(g=>`
+      <div class="scenario-group">
+        <div class="scenario-group-head">
+          <div class="g-title">${esc(g.meta.name)} — ${esc(g.meta.title)}</div>
+          <div class="g-meta">${g.attempts.length} attempt${g.attempts.length>1?'s':''}</div>
+        </div>
+        <p class="muted" style="margin:0 0 10px;">${esc(g.meta.goal)}</p>
+        ${g.attempts.map(at=>`
+          <div class="attempt-row" data-attempt="${at.id}">
+            <div class="attempt-date">${new Date(at.createdAt).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</div>
+            <div class="attempt-framework">${esc(frameworkLabel(at.framework))}</div>
+            <div class="attempt-outcome ${at.outcome?'':'pending'}">${esc(at.outcome || 'In progress')}</div>
+            <button class="btn-text btn-try-different" data-scenario="${g.meta.id}">Try a different approach</button>
+          </div>
+        `).join('')}
+      </div>
+    `).join('')}
+  </div>`;
+}
+
+/* ---------------- Screen: Detail (read-only) ---------------- */
+function renderDetail(){
+  const at = DATA.attempts.find(a=>a.id===historyDetail);
+  if(!at) return `<p class="muted">Attempt not found.</p>`;
+  const sc = DATA.scenarios.find(s=>s.id===at.scenarioId);
+  return `
+  <div>
+    <button class="back-link" id="btn-back-history">← Back to history</button>
+    <div class="detail-header">
+      <div>
+        <span class="eyebrow">${esc(frameworkLabel(at.framework))}</span>
+        <h1 style="font-size:24px;">${esc(sc.name)} — ${esc(sc.title)}</h1>
+        <p class="muted" style="margin-top:6px;">${esc(sc.goal)}</p>
+      </div>
+      <div class="attempt-outcome" style="font-size:15px;">${esc(at.outcome||'In progress')}</div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <h4 style="font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); margin-bottom:14px;">Plan used</h4>
+        ${at.plan.sections.map(s=>`
+          <div class="plan-section">
+            <h3>${esc(s.title)}</h3>
+            <ul>${s.bullets.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>
+          </div>
+        `).join('')}
+      </div>
+      <div class="card">
+        <h4 style="font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); margin-bottom:14px;">Concept summary</h4>
+        ${(at.summaryTags||[]).length ? at.summaryTags.map(t=>`
+          <div class="tag-note"><div class="tag-dot ${t.type||'term'}"></div><div class="tag-text">${esc(t.text)}</div></div>
+        `).join('') : '<div class="empty-note">No tags recorded.</div>'}
+      </div>
+    </div>
+    <div class="card" style="margin-top:20px;">
+      <h4 style="font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); margin-bottom:8px;">Transcript</h4>
+      <div class="detail-transcript">
+        ${(at.transcript||[]).map(m=>`
+          <div class="msg ${m.role==='user'?'you':'them'}" style="margin-bottom:10px; max-width:90%;">
+            <span class="role-tag">${m.role==='user'?'You':esc(sc.mgrName||'Manager')}</span>${esc(m.text)}
+          </div>
+        `).join('') || '<p class="muted">No messages recorded.</p>'}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------------- Helpers ---------------- */
+function esc(str){
+  return String(str||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------------- Screen: Auth ---------------- */
+function renderAuth(){
+  const isSignup = AUTH_MODE === 'signup';
+  return `
+  <div class="setup-wrap" style="max-width:420px; padding-top:40px;">
+    <span class="eyebrow">${isSignup ? 'Create an account' : 'Welcome back'}</span>
+    <h1 style="font-size:26px; margin-bottom:6px;">${isSignup ? 'Sign up to save your rehearsals' : 'Sign in'}</h1>
+    <p class="muted" style="margin-bottom:22px;">${isSignup ? 'Your scenarios and transcripts stay private to your account.' : 'Pick up where you left off.'}</p>
+    <div class="card">
+      <div class="field">
+        <label>Email</label>
+        <input type="text" id="auth-email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="auth-password" placeholder="At least 6 characters" autocomplete="${isSignup?'new-password':'current-password'}">
+      </div>
+      ${AUTH_ERROR ? `<div style="color:var(--clay); font-size:13px; margin-bottom:14px;">${esc(AUTH_ERROR)}</div>` : ''}
+      ${AUTH_NOTICE ? `<div style="color:var(--teal); font-size:13px; margin-bottom:14px;">${esc(AUTH_NOTICE)}</div>` : ''}
+      <div class="actions-row split">
+        <button class="btn-text" id="auth-toggle">${isSignup ? 'Already have an account? Sign in' : 'Need an account? Sign up'}</button>
+        <button class="btn btn-primary" id="auth-submit" ${AUTH_BUSY?'disabled':''}>${AUTH_BUSY ? 'Please wait…' : (isSignup ? 'Sign up' : 'Sign in')}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function attachAuthHandlers(){
+  document.getElementById('auth-toggle').onclick = ()=>{
+    AUTH_MODE = AUTH_MODE === 'signin' ? 'signup' : 'signin';
+    AUTH_ERROR = ''; AUTH_NOTICE = '';
+    render();
+  };
+  const submit = async ()=>{
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    AUTH_ERROR = ''; AUTH_NOTICE = '';
+    if(!email || !password){ AUTH_ERROR = 'Enter both an email and a password.'; render(); return; }
+    AUTH_BUSY = true; render();
+    if(AUTH_MODE === 'signup'){
+      const { error } = await supabase.auth.signUp({ email, password });
+      AUTH_BUSY = false;
+      if(error){ AUTH_ERROR = error.message; render(); return; }
+      AUTH_NOTICE = 'Account created. Check your email to confirm, then sign in.';
+      AUTH_MODE = 'signin';
+      render();
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      AUTH_BUSY = false;
+      if(error){ AUTH_ERROR = error.message; render(); return; }
+      // onAuthStateChange will load data and re-render
+    }
+  };
+  document.getElementById('auth-submit').onclick = submit;
+  document.getElementById('auth-password').addEventListener('keydown', (e)=>{ if(e.key==='Enter') submit(); });
+}
+
+/* ---------------- Event wiring ---------------- */
+function attachHandlers(){
+  if(VIEW==='setup'){
+    document.querySelectorAll('#concept-chips .chip').forEach(chip=>{
+      const c = chip.getAttribute('data-concept');
+      if(draft && draft.concepts && draft.concepts.includes(c)) chip.classList.add('selected');
+      chip.onclick = ()=>{
+        if(!draft) draft = { concepts: [] };
+        if(!draft.concepts) draft.concepts = [];
+        const idx = draft.concepts.indexOf(c);
+        if(idx>-1) draft.concepts.splice(idx,1); else draft.concepts.push(c);
+        chip.classList.toggle('selected');
+      };
+    });
+    document.getElementById('btn-build-plan').onclick = onBuildPlan;
+  }
+  if(VIEW==='plan'){
+    document.querySelectorAll('.plan-section li[contenteditable]').forEach(li=>{
+      li.addEventListener('blur', ()=>{
+        const si = +li.getAttribute('data-si'), bi = +li.getAttribute('data-bi');
+        draft.plan.sections[si].bullets[bi] = li.textContent;
+      });
+    });
+    const backBtn = document.getElementById('btn-back-setup');
+    if(backBtn) backBtn.onclick = ()=>{ VIEW='setup'; render(); };
+    const startBtn = document.getElementById('btn-start-negotiation');
+    if(startBtn) startBtn.onclick = onStartNegotiation;
+  }
+  if(VIEW==='live'){
+    const scroll = document.getElementById('chat-scroll');
+    if(scroll) scroll.scrollTop = scroll.scrollHeight;
+    const input = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('btn-send');
+    if(sendBtn) sendBtn.onclick = onSendMessage;
+    if(input){
+      input.focus();
+      input.addEventListener('keydown', (e)=>{
+        if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); onSendMessage(); }
+      });
+    }
+    const toggle = document.getElementById('toggle-plan');
+    if(toggle) toggle.onclick = ()=>{ draft.planCollapsed = !draft.planCollapsed; render(); };
+    const leaveBtn = document.getElementById('btn-leave');
+    if(leaveBtn) leaveBtn.onclick = onLeaveNegotiation;
+  }
+  if(VIEW==='history'){
+    const newBtn = document.getElementById('btn-new-scenario');
+    if(newBtn) newBtn.onclick = ()=>{ draft = null; VIEW='setup'; render(); };
+    document.querySelectorAll('.attempt-row').forEach(row=>{
+      row.addEventListener('click', (e)=>{
+        if(e.target.classList.contains('btn-try-different')) return;
+        historyDetail = row.getAttribute('data-attempt');
+        VIEW = 'detail'; render();
+      });
+    });
+    document.querySelectorAll('.btn-try-different').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const scId = btn.getAttribute('data-scenario');
+        const sc = DATA.scenarios.find(s=>s.id===scId);
+        draft = { prefill: { name: sc.name, title: sc.title, goal: sc.goal, mgrName: sc.mgrName, mgrDisp: sc.mgrDisp }, concepts: [] , existingScenarioId: sc.id};
+        VIEW='setup'; render();
+      });
+    });
+  }
+  if(VIEW==='detail'){
+    document.getElementById('btn-back-history').onclick = ()=>{ VIEW='history'; render(); };
+  }
+}
+
+/* ---------------- Actions ---------------- */
+async function onBuildPlan(){
+  const name = document.getElementById('f-name').value.trim() || 'You';
+  const title = document.getElementById('f-title').value.trim() || 'Your role';
+  const goal = document.getElementById('f-goal').value.trim() || 'Asking for a raise';
+  const mgrName = document.getElementById('f-mgr-name').value.trim();
+  const mgrDisp = document.getElementById('f-mgr-disp').value.trim();
+  const framework = document.getElementById('f-framework').value || 'two';
+  const concepts = (draft && draft.concepts) ? draft.concepts : [];
+
+  const prefill = { name, title, goal, mgrName, mgrDisp };
+  const existingScenarioId = draft ? draft.existingScenarioId : null;
+  draft = { prefill, framework, concepts, existingScenarioId };
+
+  VIEW = 'plan';
+  planLoading = true;
+  render();
+
+  const plan = await generatePlan(prefill, framework, concepts);
+  draft.plan = plan;
+  planLoading = false;
+  render();
+}
+
+function sectionSpecForFramework(framework){
+  switch(framework){
+    case 'seven': return `Seven Elements framework. Produce exactly these 7 sections in this order, each with exactly 1 bullet tailored to the person's goal and counterpart context: "Interests", "Legitimacy", "Relationships", "Alternatives (BATNA)", "Options", "Commitments", "Communication".`;
+    case 'core': return `Core Concerns framework. Produce exactly these 5 sections, each with exactly 1 bullet giving a concrete phrase or move for this ask: "Appreciation", "Affiliation", "Autonomy", "Status", "Role".`;
+    case 'anchor': return `Anchor & Legitimacy framework. Produce exactly 2 sections: "Opening anchor" (1 bullet with a suggested number or range), and "Legitimacy points" (2-3 bullets: market comps, scope, timing — each credible and specific).`;
+    case 'multi': return `Multi-issue expansion framework. Produce exactly 1 section titled "Variables in play" with 4-5 bullets, each naming a variable beyond price (timing, scope, title, review cycle, remote/flex terms, etc.) with a one-line note.`;
+    default: return `2 Elements Framework. Produce exactly 2 sections: "Interests" (2-3 bullets on the real why behind the ask, not just the number) and "BATNA" (2-3 bullets on the walk-away alternative and how to protect it — never reveal it, never reveal time pressure).`;
+  }
+}
+
+async function generatePlan(prefill, framework, concepts){
+  const system = `You are a sharp negotiation coach helping someone prep for a real conversation asking their manager for a raise. Output ONLY valid JSON, no preamble, no markdown fences. Format exactly: {"sections":[{"title":"...","bullets":["...","..."]}]}. Bullets must be short, concrete, scannable phrases (max ~18 words each) — a cheat sheet, not prose. Tailor everything to the specifics given.`;
+  const userMsg = `Person: ${prefill.name}, ${prefill.title}.
+Goal of the raise ask: ${prefill.goal}
+Counterpart: ${prefill.mgrName || 'unspecified manager'}, disposition: ${prefill.mgrDisp || 'unspecified'}
+${concepts.length ? 'Concepts to stress-test in the bullets where relevant: ' + concepts.join(', ') : ''}
+
+${sectionSpecForFramework(framework)}
+
+Return only the JSON object.`;
+  const result = await askAI(system, [{role:'user', content:userMsg}], true);
+  if(result && result.sections) return result;
+  return { sections: [{ title:'Interests', bullets:['Clarify what outcome matters most beyond the number.'] }, { title:'BATNA', bullets:['Know your walk-away alternative before you sit down.'] }] };
+}
+
+async function onStartNegotiation(){
+  let scenarioId = draft.existingScenarioId;
+  if(!scenarioId){
+    const gk = groupKeyFor(draft.prefill.name, draft.prefill.title, draft.prefill.goal);
+    let sc = DATA.scenarios.find(s=>s.groupKey===gk);
+    if(!sc){
+      sc = await createScenario(draft.prefill, gk);
+    }
+    scenarioId = sc.id;
+  }
+  draft.scenarioId = scenarioId;
+  draft.attemptId = uid();
+  draft.transcript = [];
+  draft.summaryTags = [];
+  draft.createdAt = Date.now();
+  draft.planCollapsed = false;
+  await saveAttemptSnapshot();
+  VIEW = 'live';
+  render();
+}
+
+async function saveAttemptSnapshot(status){
+  const record = {
+    id: draft.attemptId,
+    user_id: SESSION.user.id,
+    scenario_id: draft.scenarioId,
+    framework: draft.framework,
+    concepts: draft.concepts,
+    plan: draft.plan,
+    transcript: draft.transcript,
+    summary_tags: draft.summaryTags,
+    outcome: draft.outcome || null,
+    status: status || 'in-progress',
+    created_at: new Date(draft.createdAt).toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  const { error } = await supabase.from('attempts').upsert(record);
+  if(error) console.error('saveAttemptSnapshot failed', error);
+
+  const local = {
+    id: draft.attemptId, scenarioId: draft.scenarioId, framework: draft.framework, concepts: draft.concepts,
+    plan: draft.plan, transcript: draft.transcript, summaryTags: draft.summaryTags,
+    outcome: draft.outcome || null, status: status || 'in-progress', createdAt: draft.createdAt
+  };
+  const idx = DATA.attempts.findIndex(a=>a.id===draft.attemptId);
+  if(idx>-1) DATA.attempts[idx] = local; else DATA.attempts.push(local);
+}
+
+async function onSendMessage(){
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if(!text || liveLoading) return;
+  draft.transcript.push({ role:'user', text });
+  input.value = '';
+  liveLoading = true;
+  render();
+
+  const mgrName = draft.prefill.mgrName || 'the manager';
+  const mgrDisp = draft.prefill.mgrDisp || 'no particular disposition specified — play it realistically neutral';
+  const system = `You are roleplaying as ${mgrName}, the manager in a salary raise negotiation with ${draft.prefill.name}, who holds the title "${draft.prefill.title}". Manager disposition: ${mgrDisp}. The employee's stated goal: ${draft.prefill.goal}.
+Stay fully in character as the manager only — never break character, never give coaching advice, never speak as narrator.
+Negotiate realistically: do not fold easily. Push back at least sometimes, ask clarifying questions, counter-anchor, stall, or raise real constraints (budget cycles, precedent, needing to check with others) when appropriate to the disposition. Keep replies to 2-5 sentences, natural spoken dialogue, no stage directions, no markdown.`;
+
+  const apiMessages = draft.transcript.map(m=>({ role: m.role==='user'?'user':'assistant', content: m.text }));
+  const reply = await askAI(system, apiMessages, false);
+  draft.transcript.push({ role:'assistant', text: (reply||'').trim() || "...I need a moment to think about that." });
+  liveLoading = false;
+  render();
+
+  updateLiveSummary();
+  saveAttemptSnapshot();
+}
+
+async function updateLiveSummary(){
+  summaryLoading = true;
+  render();
+  const system = `You extract a short running summary of a live salary negotiation roleplay. Output ONLY valid JSON: {"tags":[{"type":"anchor|pushback|term","text":"short phrase, max 10 words"}]}. Types: "anchor" for any number/range stated by either side, "pushback" for objections/constraints/counter-anchors raised by the manager, "term" for any non-price variable raised (timing, scope, title, start date, review cycle, etc). Keep the list to the most important 4-8 items across the whole conversation so far, most recent developments included. No duplicates.`;
+  const transcriptText = draft.transcript.map(m=> (m.role==='user'?'Employee: ':'Manager: ') + m.text).join('\n');
+  const result = await askAI(system, [{role:'user', content: 'Transcript so far:\n' + transcriptText}], true);
+  if(result && result.tags) draft.summaryTags = result.tags;
+  summaryLoading = false;
+  render();
+  saveAttemptSnapshot();
+}
+
+async function onLeaveNegotiation(){
+  const wantsSave = confirm('Save this attempt before leaving?');
+  if(wantsSave){
+    if(draft.transcript.length>0){
+      const system = `Summarize the outcome of this salary negotiation roleplay in one short punchy tag, 3-6 words, e.g. "Held anchor", "Conceded early", "Manager agreed to review in Q1". Output ONLY valid JSON: {"outcome":"..."}`;
+      const transcriptText = draft.transcript.map(m=> (m.role==='user'?'Employee: ':'Manager: ') + m.text).join('\n');
+      const result = await askAI(system, [{role:'user', content: transcriptText}], true);
+      draft.outcome = (result && result.outcome) ? result.outcome : 'Attempt recorded';
+    } else {
+      draft.outcome = 'Ended early';
+    }
+    await saveAttemptSnapshot('completed');
+  }
+  draft = null;
+  VIEW = 'history';
+  render();
+}
+
+/* ---------------- Boot ---------------- */
+(async function init(){
+  await initAuth();
+  if(SESSION){ await loadData(); }
+  render();
+})();
+</script>
+</body>
+</html>
