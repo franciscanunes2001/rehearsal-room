@@ -62,7 +62,8 @@
 
   /* Header */
   .topbar{display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom:40px; padding-bottom:20px; border-bottom:1px solid var(--line);}
-  .brand{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; background:none; border:none; padding:0; cursor:pointer; text-align:left; opacity:1; transition:opacity .12s ease;}
+  .brand:hover{opacity:.8;}
   .brand-mark{font-family:var(--font-display); font-weight:600; font-size:22px; letter-spacing:-0.01em; color:var(--ink); background:linear-gradient(90deg,#fff,#c9cdd6); -webkit-background-clip:text; background-clip:text; color:transparent;}
   .brand-sub{font-family:var(--font-mono); font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-faint);}
   .topbar-actions{display:flex; align-items:center; gap:20px; flex-wrap:wrap;}
@@ -236,7 +237,7 @@ async function initAuth(){
     const hadSession = !!SESSION;
     SESSION = session;
     if(SESSION && !hadSession){ await loadData(); }
-    if(!SESSION){ DATA = { scenarios: [], attempts: [] }; draft = null; VIEW = 'setup'; }
+    if(!SESSION){ DATA = { scenarios: [], attempts: [] }; draft = null; VIEW = 'home'; }
     render();
   });
 }
@@ -308,9 +309,10 @@ async function askAI(system, messages, wantJSON){
 }
 
 /* ---------------- App state ---------------- */
-let VIEW = 'setup'; // setup | plan | live | history | detail
+let VIEW = 'home'; // home | setup | plan | live | history | detail
 let draft = null;     // in-progress setup+plan+attempt object being built
 let historyDetail = null; // attempt id being viewed read-only
+let detailOrigin = 'history'; // 'home' | 'history' — where to return to from the detail view
 let planLoading = false;
 let liveLoading = false;
 let summaryLoading = false;
@@ -336,7 +338,7 @@ function render(){
   if(!SESSION){
     app.innerHTML = `
       <div class="topbar">
-        <div class="brand">
+        <div class="brand" style="cursor:default;">
           <span class="brand-mark">The Rehearsal Room</span>
           <span class="brand-sub">Raise negotiation practice</span>
         </div>
@@ -350,10 +352,10 @@ function render(){
 
   app.innerHTML = `
     <div class="topbar">
-      <div class="brand">
+      <button class="brand" id="btn-home" title="Home">
         <span class="brand-mark">The Rehearsal Room</span>
         <span class="brand-sub">Raise negotiation practice</span>
-      </div>
+      </button>
       <div class="topbar-actions">
         <div class="nav-steps">
           <span class="${stepClass('setup')}">1 · Setup</span>
@@ -366,9 +368,11 @@ function render(){
     </div>
     <div id="screen"></div>
   `;
+  document.getElementById('btn-home').onclick = ()=>{ VIEW='home'; render(); };
   document.getElementById('btn-sign-out').onclick = async ()=>{ await supabase.auth.signOut(); };
   const screen = document.getElementById('screen');
-  if(VIEW==='setup') screen.innerHTML = renderSetup();
+  if(VIEW==='home') screen.innerHTML = renderHome();
+  else if(VIEW==='setup') screen.innerHTML = renderSetup();
   else if(VIEW==='plan') screen.innerHTML = renderPlan();
   else if(VIEW==='live') screen.innerHTML = renderLive();
   else if(VIEW==='history') screen.innerHTML = renderHistory();
@@ -377,9 +381,10 @@ function render(){
 }
 function stepClass(name){
   const order = ['setup','plan','live','history'];
-  if(VIEW==='detail') return name==='history' ? 'active' : (order.indexOf(name) < order.indexOf('history') ? 'done' : '');
-  if(name===VIEW) return 'active';
-  return order.indexOf(name) < order.indexOf(VIEW) ? 'done' : '';
+  const effectiveView = VIEW==='detail' ? detailOrigin : VIEW;
+  if(order.indexOf(effectiveView)===-1) return ''; // 'home' isn't part of the stepper
+  if(name===effectiveView) return 'active';
+  return order.indexOf(name) < order.indexOf(effectiveView) ? 'done' : '';
 }
 
 /* ---------------- Screen: Setup ---------------- */
@@ -530,6 +535,65 @@ function renderLive(){
 }
 
 /* ---------------- Screen: History ---------------- */
+function groupAttempts(){
+  const groups = {};
+  DATA.scenarios.forEach(s=>{ groups[s.groupKey] = { meta: s, attempts: [] }; });
+  DATA.attempts.slice().sort((a,b)=>b.createdAt-a.createdAt).forEach(at=>{
+    const sc = DATA.scenarios.find(s=>s.id===at.scenarioId);
+    if(!sc) return;
+    if(!groups[sc.groupKey]) groups[sc.groupKey] = { meta: sc, attempts: [] };
+    groups[sc.groupKey].attempts.push(at);
+  });
+  return Object.values(groups).filter(g=>g.attempts.length>0)
+    .sort((a,b)=> Math.max(...b.attempts.map(x=>x.createdAt)) - Math.max(...a.attempts.map(x=>x.createdAt)) );
+}
+
+function renderScenarioGroups(groupList){
+  return groupList.map(g=>`
+    <div class="scenario-group">
+      <div class="scenario-group-head">
+        <div class="g-title">${esc(g.meta.name)} — ${esc(g.meta.title)}</div>
+        <div class="g-meta">${g.attempts.length} attempt${g.attempts.length>1?'s':''}</div>
+      </div>
+      <p class="muted" style="margin:0 0 10px;">${esc(g.meta.goal)}</p>
+      ${g.attempts.map(at=>`
+        <div class="attempt-row" data-attempt="${at.id}">
+          <div class="attempt-date">${new Date(at.createdAt).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</div>
+          <div class="attempt-framework">${esc(frameworkLabel(at.framework))}</div>
+          <div class="attempt-outcome ${at.outcome?'':'pending'}">${esc(at.outcome || 'In progress')}</div>
+          <button class="btn-text btn-try-different" data-scenario="${g.meta.id}">Try a different approach</button>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+/* ---------------- Screen: Home ---------------- */
+function renderHome(){
+  const groupList = groupAttempts();
+  if(groupList.length===0){
+    return `
+    <div class="empty-state">
+      <span class="eyebrow">Welcome</span>
+      <h2 style="font-size:22px; margin-bottom:14px;">Rehearse your next negotiation</h2>
+      <p class="muted" style="margin-bottom:24px;">Set the scene, get a prep plan, and practice live with an AI manager. Your simulations will collect here.</p>
+      <button class="btn btn-primary" id="btn-new-scenario">Start a simulation →</button>
+    </div>`;
+  }
+  return `
+  <div>
+    <div class="history-header">
+      <div>
+        <span class="eyebrow">Welcome back</span>
+        <h1 style="font-size:26px;">Your rehearsals</h1>
+      </div>
+      <button class="btn btn-primary" id="btn-new-scenario">New simulation →</button>
+    </div>
+    ${renderScenarioGroups(groupList)}
+  </div>`;
+}
+
+/* ---------------- Screen: History ---------------- */
 function renderHistory(){
   if(DATA.attempts.length===0){
     return `
@@ -540,17 +604,6 @@ function renderHistory(){
       <button class="btn btn-primary" id="btn-new-scenario">Start a scenario →</button>
     </div>`;
   }
-  const groups = {};
-  DATA.scenarios.forEach(s=>{ groups[s.groupKey] = { meta: s, attempts: [] }; });
-  DATA.attempts.slice().sort((a,b)=>b.createdAt-a.createdAt).forEach(at=>{
-    const sc = DATA.scenarios.find(s=>s.id===at.scenarioId);
-    if(!sc) return;
-    if(!groups[sc.groupKey]) groups[sc.groupKey] = { meta: sc, attempts: [] };
-    groups[sc.groupKey].attempts.push(at);
-  });
-  const groupList = Object.values(groups).filter(g=>g.attempts.length>0)
-    .sort((a,b)=> Math.max(...b.attempts.map(x=>x.createdAt)) - Math.max(...a.attempts.map(x=>x.createdAt)) );
-
   return `
   <div>
     <div class="history-header">
@@ -560,23 +613,7 @@ function renderHistory(){
       </div>
       <button class="btn btn-primary" id="btn-new-scenario">New scenario →</button>
     </div>
-    ${groupList.map(g=>`
-      <div class="scenario-group">
-        <div class="scenario-group-head">
-          <div class="g-title">${esc(g.meta.name)} — ${esc(g.meta.title)}</div>
-          <div class="g-meta">${g.attempts.length} attempt${g.attempts.length>1?'s':''}</div>
-        </div>
-        <p class="muted" style="margin:0 0 10px;">${esc(g.meta.goal)}</p>
-        ${g.attempts.map(at=>`
-          <div class="attempt-row" data-attempt="${at.id}">
-            <div class="attempt-date">${new Date(at.createdAt).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</div>
-            <div class="attempt-framework">${esc(frameworkLabel(at.framework))}</div>
-            <div class="attempt-outcome ${at.outcome?'':'pending'}">${esc(at.outcome || 'In progress')}</div>
-            <button class="btn-text btn-try-different" data-scenario="${g.meta.id}">Try a different approach</button>
-          </div>
-        `).join('')}
-      </div>
-    `).join('')}
+    ${renderScenarioGroups(groupAttempts())}
   </div>`;
 }
 
@@ -587,7 +624,7 @@ function renderDetail(){
   const sc = DATA.scenarios.find(s=>s.id===at.scenarioId);
   return `
   <div>
-    <button class="back-link" id="btn-back-history">← Back to history</button>
+    <button class="back-link" id="btn-back-history">← Back to ${detailOrigin==='home' ? 'home' : 'history'}</button>
     <div class="detail-header">
       <div>
         <span class="eyebrow">${esc(frameworkLabel(at.framework))}</span>
@@ -710,13 +747,14 @@ function attachHandlers(){
     const leaveBtn = document.getElementById('btn-leave');
     if(leaveBtn) leaveBtn.onclick = onLeaveNegotiation;
   }
-  if(VIEW==='history'){
+  if(VIEW==='home' || VIEW==='history'){
     const newBtn = document.getElementById('btn-new-scenario');
     if(newBtn) newBtn.onclick = ()=>{ draft = null; VIEW='setup'; render(); };
     document.querySelectorAll('.attempt-row').forEach(row=>{
       row.addEventListener('click', (e)=>{
         if(e.target.classList.contains('btn-try-different')) return;
         historyDetail = row.getAttribute('data-attempt');
+        detailOrigin = VIEW;
         VIEW = 'detail'; render();
       });
     });
@@ -731,7 +769,7 @@ function attachHandlers(){
     });
   }
   if(VIEW==='detail'){
-    document.getElementById('btn-back-history').onclick = ()=>{ VIEW='history'; render(); };
+    document.getElementById('btn-back-history').onclick = ()=>{ VIEW=detailOrigin; render(); };
   }
 }
 
