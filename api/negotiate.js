@@ -3,9 +3,8 @@
 //
 // Env vars to set in the Vercel project (Settings > Environment Variables):
 //   GEMINI_API_KEY   - required, from Google AI Studio (aistudio.google.com)
-//   GEMINI_MODEL     - optional, defaults to gemini-2.5-flash
-//                      (check ai.google.dev/pricing for the current free-tier model name;
-//                       Google renames/deprecates these periodically)
+//   GEMINI_MODEL     - optional, defaults to gemini-flash-latest (Google's self-updating
+//                       alias for the current flash model, to dodge deprecations)
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -18,7 +17,7 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Server is missing GEMINI_API_KEY' });
     return;
   }
-  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const model = process.env.GEMINI_MODEL || 'gemini-flash-latest';
 
   const { system, messages } = req.body || {};
   if (!Array.isArray(messages)) {

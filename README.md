@@ -48,8 +48,7 @@ git push -u origin main
 3. Before clicking Deploy, open **Environment Variables** and add:
    - `GEMINI_API_KEY` = your Gemini key from Google AI Studio
    - (optional) `GEMINI_MODEL` = a specific model name if you want to override the default
-     (`gemini-2.5-flash`). Check ai.google.dev/pricing if you're not sure which model is
-     currently free — Google renames/retires these periodically.
+     (`gemini-flash-latest`, Google's self-updating alias for the current flash model).
 4. Click **Deploy**. In about a minute you'll get a live URL like `rehearsal-room.vercel.app`.
 
 That's it — that URL is shareable with anyone. Each person who visits it signs up for their
