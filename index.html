@@ -61,12 +61,13 @@
   .app{max-width:1180px; margin:0 auto; padding:32px 24px 80px;}
 
   /* Header */
-  .topbar{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:40px; padding-bottom:20px; border-bottom:1px solid var(--line);}
-  .brand{display:flex; align-items:baseline; gap:10px;}
+  .topbar{display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom:40px; padding-bottom:20px; border-bottom:1px solid var(--line);}
+  .brand{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;}
   .brand-mark{font-family:var(--font-display); font-weight:600; font-size:22px; letter-spacing:-0.01em; color:var(--ink); background:linear-gradient(90deg,#fff,#c9cdd6); -webkit-background-clip:text; background-clip:text; color:transparent;}
   .brand-sub{font-family:var(--font-mono); font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-faint);}
-  .nav-steps{display:flex; gap:8px; font-family:var(--font-mono); font-size:11px; letter-spacing:0.04em; text-transform:uppercase;}
-  .nav-steps span{color:var(--ink-faint); padding:7px 13px; border-radius:999px; border:1px solid transparent; transition:all .15s ease;}
+  .topbar-actions{display:flex; align-items:center; gap:20px; flex-wrap:wrap;}
+  .nav-steps{display:flex; gap:8px; font-family:var(--font-mono); font-size:11px; letter-spacing:0.04em; text-transform:uppercase; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .nav-steps span{color:var(--ink-faint); padding:7px 13px; border-radius:999px; border:1px solid transparent; transition:all .15s ease; white-space:nowrap;}
   .nav-steps span.active{color:#1a1300; background:var(--amber); font-weight:600; box-shadow:0 0 0 1px var(--amber), 0 0 18px var(--amber-glow);}
   .nav-steps span.done{color:var(--ink-soft); border-color:var(--line);}
 
@@ -188,6 +189,24 @@
 
   .two-col{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
   @media (max-width:800px){ .two-col{grid-template-columns:1fr;} }
+
+  /* ---- Mobile ---- */
+  @media (max-width:640px){
+    .app{padding:20px 16px 60px;}
+    .topbar{flex-direction:column; align-items:flex-start; gap:12px; margin-bottom:28px;}
+    .topbar-actions{width:100%; justify-content:space-between; gap:12px;}
+    .nav-steps{gap:5px;}
+    .nav-steps span{padding:6px 10px; font-size:10px;}
+    .card{padding:20px;}
+    .row2{grid-template-columns:1fr; gap:0;}
+    .actions-row{flex-wrap:wrap;}
+    .actions-row.split{gap:12px;}
+    .actions-row.split .btn{flex:1; justify-content:center;}
+    .chat-card{height:calc(100vh - 160px); min-height:420px;}
+    .msg{max-width:90%;}
+    .history-header, .detail-header{flex-direction:column; align-items:flex-start; gap:14px;}
+    .scenario-group-head{flex-direction:column; align-items:flex-start; gap:4px;}
+  }
 </style>
 </head>
 <body>
@@ -335,7 +354,7 @@ function render(){
         <span class="brand-mark">The Rehearsal Room</span>
         <span class="brand-sub">Raise negotiation practice</span>
       </div>
-      <div style="display:flex; align-items:center; gap:20px;">
+      <div class="topbar-actions">
         <div class="nav-steps">
           <span class="${stepClass('setup')}">1 · Setup</span>
           <span class="${stepClass('plan')}">2 · Plan</span>
