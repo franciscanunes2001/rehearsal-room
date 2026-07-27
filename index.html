@@ -6,212 +6,235 @@
 <title>The Rehearsal Room — Raise Negotiation Simulator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
 <style>
+  /* ---- Nocturne design tokens ---- */
   :root{
-    --bg: #0A0B0D;
-    --bg-deep: #050608;
-    --surface: #15171C;
-    --surface-2: #1C1F26;
-    --surface-hover: #22252D;
-    --card: #15171C;
-    --ink: #F1F1F3;
-    --ink-soft: #A2A6B0;
-    --ink-faint: #62666F;
-    --amber: #F0B94D;
-    --amber-soft: rgba(240,185,77,0.14);
-    --amber-glow: rgba(240,185,77,0.35);
-    --teal: #45C4B0;
-    --teal-soft: rgba(69,196,176,0.13);
-    --clay: #E2795F;
-    --clay-soft: rgba(226,121,95,0.14);
-    --line: #262931;
-    --line-soft: #1D2027;
-    --line-strong: #34384260;
-    --shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 12px 32px rgba(0,0,0,0.45);
-    --shadow-sm: 0 1px 0 rgba(255,255,255,0.02) inset, 0 4px 14px rgba(0,0,0,0.35);
-    --font-display: 'Fraunces', serif;
-    --font-body: 'Inter', -apple-system, sans-serif;
-    --font-mono: 'IBM Plex Mono', monospace;
-    --radius: 16px;
+    --color-bg: #161826;
+    --color-surface: #232532;
+    --color-text: #e9e9ed;
+    --color-accent: #9184d9;
+    --color-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
+
+    --color-neutral-100: #f3f5fe;
+    --color-neutral-200: #e4e7f5;
+    --color-neutral-300: #cfd3e5;
+    --color-neutral-400: #b2b6ca;
+    --color-neutral-500: #9397ab;
+    --color-neutral-600: #75798c;
+    --color-neutral-700: #595d6c;
+    --color-neutral-800: #3f424d;
+    --color-neutral-900: #292b31;
+
+    --color-accent-100: #f5f4ff;
+    --color-accent-200: #e7e5fe;
+    --color-accent-300: #d2cefd;
+    --color-accent-400: #b5abfc;
+    --color-accent-500: #968ae0;
+    --color-accent-600: #796cbf;
+    --color-accent-700: #5d5294;
+    --color-accent-800: #423a6a;
+    --color-accent-900: #2b2741;
+
+    --font-heading: "Inter", system-ui, sans-serif;
+    --font-heading-weight: 500;
+    --font-body: "Inter", system-ui, sans-serif;
+
+    --space-1: 2.8px;
+    --space-2: 5.6px;
+    --space-3: 8.4px;
+    --space-4: 11.2px;
+    --space-6: 16.8px;
+    --space-8: 22.4px;
+
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 14px;
+
+    --shadow-sm: 0 0 0 1px #3f424d;
+    --shadow-md: 0 0 0 1px #595d6c, 0 6px 18px rgba(0,0,0,0.55);
+    --shadow-lg: 0 0 0 1px #9397ab, 0 16px 40px rgba(0,0,0,0.65);
   }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
+  *, *::before, *::after{ box-sizing:border-box; }
+  html, body{ margin:0; padding:0; }
   body{
-    background:var(--bg);
-    background-image:
-      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(240,185,77,0.09), transparent 60%),
-      radial-gradient(ellipse 800px 600px at 100% 10%, rgba(69,196,176,0.07), transparent 55%),
-      radial-gradient(ellipse 700px 500px at 50% 100%, rgba(226,121,95,0.05), transparent 60%);
-    background-attachment:fixed;
-    color:var(--ink);
-    font-family:var(--font-body);
-    min-height:100vh;
-    -webkit-font-smoothing:antialiased;
+    background:var(--color-bg); color:var(--color-text); font-family:var(--font-body);
+    font-size:15px; line-height:1.55; font-weight:400; -webkit-font-smoothing:antialiased;
   }
-  ::selection{background:var(--amber-glow); color:#1a1300;}
-  ::-webkit-scrollbar{width:10px; height:10px;}
-  ::-webkit-scrollbar-track{background:transparent;}
-  ::-webkit-scrollbar-thumb{background:#2C2F38; border-radius:8px; border:2px solid var(--bg);}
-  ::-webkit-scrollbar-thumb:hover{background:#3A3E48;}
-  button{font-family:var(--font-body); cursor:pointer;}
-  textarea, input, select{font-family:var(--font-body); color-scheme:dark;}
-  a{color:inherit;}
-
-  .app{max-width:1180px; margin:0 auto; padding:32px 24px 80px;}
-
-  /* Header */
-  .topbar{display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom:40px; padding-bottom:20px; border-bottom:1px solid var(--line);}
-  .brand{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; background:none; border:none; padding:0; cursor:pointer; text-align:left; opacity:1; transition:opacity .12s ease;}
-  .brand:hover{opacity:.8;}
-  .brand-mark{font-family:var(--font-display); font-weight:600; font-size:22px; letter-spacing:-0.01em; color:var(--ink); background:linear-gradient(90deg,#fff,#c9cdd6); -webkit-background-clip:text; background-clip:text; color:transparent;}
-  .brand-sub{font-family:var(--font-mono); font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-faint);}
-  .topbar-actions{display:flex; align-items:center; gap:20px; flex-wrap:wrap;}
-  .nav-steps{display:flex; gap:8px; font-family:var(--font-mono); font-size:11px; letter-spacing:0.04em; text-transform:uppercase; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;}
-  .nav-steps span{color:var(--ink-faint); padding:7px 13px; border-radius:999px; border:1px solid transparent; transition:all .15s ease; white-space:nowrap;}
-  .nav-steps span.active{color:#1a1300; background:var(--amber); font-weight:600; box-shadow:0 0 0 1px var(--amber), 0 0 18px var(--amber-glow);}
-  .nav-steps span.done{color:var(--ink-soft); border-color:var(--line);}
-
-  h1,h2,h3{font-family:var(--font-display); font-weight:600; margin:0; color:var(--ink);}
-  .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--amber); margin-bottom:8px; display:block;}
-
-  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:32px;}
-  .muted{color:var(--ink-soft); font-size:14px; line-height:1.6;}
-
-  /* ---- Setup ---- */
-  .setup-wrap{max-width:680px; margin:0 auto;}
-  .field{margin-bottom:20px;}
-  .field label{display:block; font-size:13px; font-weight:600; margin-bottom:7px; color:var(--ink);}
-  .field .hint{font-size:12.5px; color:var(--ink-faint); margin-top:5px;}
-  .field input[type=text], .field textarea, .field select{
-    width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:10px;
-    background:var(--surface-2); font-size:14.5px; color:var(--ink); resize:vertical; transition:border-color .12s ease, box-shadow .12s ease;
+  h1,h2,h3,h4,h5,h6{
+    font-family:var(--font-heading); font-weight:var(--font-heading-weight);
+    line-height:1.12; letter-spacing:-0.015em; margin:0 0 var(--space-2);
   }
-  .field input::placeholder, .field textarea::placeholder{color:var(--ink-faint);}
-  .field input:focus, .field textarea:focus, .field select:focus{outline:none; border-color:var(--amber); box-shadow:0 0 0 3px var(--amber-soft);}
-  .field textarea{min-height:70px; line-height:1.5;}
-  .row2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
-  .chip-group{display:flex; flex-wrap:wrap; gap:9px;}
-  .chip{
-    padding:8px 15px; border:1px solid var(--line); border-radius:999px; font-size:13px;
-    background:var(--surface-2); color:var(--ink-soft); transition:all .12s ease; user-select:none;
+  h1{ font-size:30px; } h2{ font-size:24px; } h3{ font-size:20px; } h4{ font-size:18px; } h5{ font-size:15px; }
+  p{ margin:0 0 var(--space-3); }
+  a{ color:var(--color-accent); text-underline-offset:3px; }
+  ::selection{ background:color-mix(in srgb, var(--color-accent) 30%, transparent); }
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background:var(--color-divider); border-radius:8px; }
+  :focus{ outline:none; }
+  :focus-visible{ outline:2px solid var(--color-accent); outline-offset:2px; }
+  .text-muted{ color:color-mix(in srgb, var(--color-text) 55%, transparent); }
+
+  .hr{
+    height:1px; border:0; margin:0;
+    background:linear-gradient(to right, transparent, var(--color-divider) 48px, var(--color-divider) calc(100% - 48px), transparent);
   }
-  .chip:hover{border-color:var(--ink-faint); color:var(--ink);}
-  .chip.selected{background:var(--amber-soft); color:var(--amber); border-color:var(--amber);}
-  .divider{height:1px; background:var(--line); margin:26px 0;}
+
+  /* ---- buttons ---- */
   .btn{
-    font-weight:600; font-size:14.5px; padding:13px 26px; border-radius:10px; border:none;
-    display:inline-flex; align-items:center; gap:8px; transition:transform .08s ease, box-shadow .15s ease, background .15s ease;
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    cursor:pointer; text-decoration:none; font-family:var(--font-heading); font-weight:var(--font-heading-weight);
+    font-size:14px; line-height:1.2; color:var(--color-text); background:transparent; border:1px solid transparent;
+    padding:var(--space-2) calc(var(--space-3) * 1.2); border-radius:var(--radius-md); white-space:nowrap;
   }
-  .btn:active{transform:translateY(1px);}
-  .btn-primary{background:var(--amber); color:#1a1300; box-shadow:0 4px 20px rgba(240,185,77,0.25);}
-  .btn-primary:hover{background:#f5c66a; box-shadow:0 4px 26px rgba(240,185,77,0.4);}
-  .btn-primary:disabled{background:var(--surface-2); color:var(--ink-faint); box-shadow:none; cursor:not-allowed;}
-  .btn-ghost{background:transparent; color:var(--ink-soft); border:1px solid var(--line);}
-  .btn-ghost:hover{border-color:var(--ink-faint); color:var(--ink); background:var(--surface-2);}
-  .btn-text{background:none; border:none; color:var(--teal); font-weight:600; font-size:13.5px; padding:6px 2px;}
-  .btn-text:hover{color:#6fd8c6;}
-  .actions-row{display:flex; justify-content:flex-end; gap:12px; margin-top:8px;}
-  .actions-row.split{justify-content:space-between;}
+  .btn:disabled{ opacity:0.45; cursor:not-allowed; }
+  .btn-primary{ color:var(--color-accent); border-color:var(--color-accent); }
+  .btn-primary:hover:not(:disabled){ background:color-mix(in srgb, var(--color-accent) 12%, transparent); }
+  .btn-primary:active:not(:disabled){ background:color-mix(in srgb, var(--color-accent) 22%, transparent); }
+  .btn-secondary{ border-color:var(--color-divider); }
+  .btn-secondary:hover:not(:disabled){ background:color-mix(in srgb, var(--color-text) 7%, transparent); }
+  .btn-ghost{ color:var(--color-accent); padding-inline:var(--space-1); border:none; }
+  .btn-ghost:hover:not(:disabled){ background:color-mix(in srgb, var(--color-accent) 10%, transparent); }
+  .btn-block{ width:100%; }
 
-  /* ---- Plan ---- */
-  .plan-grid{display:grid; grid-template-columns:1fr; gap:14px;}
-  .plan-section{border:1px solid var(--line-soft); border-left:3px solid var(--teal); border-radius:12px; padding:18px 20px; background:var(--surface); position:relative;}
-  .plan-section h3{font-size:14.5px; font-family:var(--font-body); font-weight:700; color:var(--teal); margin-bottom:10px; letter-spacing:0.01em;}
-  .plan-section ul{margin:0; padding-left:18px;}
-  .plan-section li{margin-bottom:8px; line-height:1.55; font-size:14.5px; color:var(--ink);}
-  .plan-section li[contenteditable]{outline:none; border-radius:5px; padding:2px 4px; margin-left:-4px;}
-  .plan-section li[contenteditable]:hover{background:var(--surface-2);}
-  .plan-section li[contenteditable]:focus{background:var(--surface-2); box-shadow:0 0 0 2px var(--teal);}
-  .reminder-block{border:1px solid var(--amber); border-radius:12px; padding:16px 20px; background:var(--amber-soft); font-size:13.5px; color:#f4d99a; font-family:var(--font-mono); line-height:1.75;}
-  .loading-row{display:flex; align-items:center; gap:10px; color:var(--ink-soft); font-size:14px; padding:40px 0; justify-content:center;}
-  .spinner{width:16px; height:16px; border-radius:50%; border:2px solid var(--line); border-top-color:var(--amber); animation:spin .8s linear infinite;}
-  @keyframes spin{to{transform:rotate(360deg);}}
+  /* ---- forms ---- */
+  .field{ margin-bottom:var(--space-4); }
+  .field label{ display:block; font-size:12px; margin-bottom:5px; color:color-mix(in srgb, var(--color-text) 70%, transparent); }
+  .input{
+    width:100%; min-height:36px; padding:8px 11px; font:inherit; font-size:14px; color:var(--color-text);
+    caret-color:var(--color-accent); background:var(--color-surface); border:1px solid var(--color-divider);
+    border-radius:var(--radius-md);
+  }
+  .input:hover{ border-color:color-mix(in srgb, var(--color-text) 45%, transparent); }
+  .input:focus-visible{ border-color:var(--color-accent); outline-offset:0; }
+  textarea.input{ min-height:80px; resize:vertical; font-family:inherit; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4); }
+  .seg{ display:inline-flex; overflow:hidden; border:1px solid var(--color-divider); border-radius:var(--radius-md); }
+  .seg-opt{ display:inline-flex; align-items:center; gap:6px; padding:8px 14px; font-size:13px; cursor:pointer; }
+  .seg-opt input{ position:absolute; opacity:0; width:0; height:0; pointer-events:none; }
+  .seg-opt + .seg-opt{ border-left:1px solid var(--color-divider); }
+  .seg-opt:has(input:checked){ color:var(--color-accent); box-shadow:inset 0 0 0 1px var(--color-accent); }
+  .seg-opt:not(:has(input:checked)):hover{ background:color-mix(in srgb, var(--color-text) 7%, transparent); }
 
-  /* ---- Live simulation ---- */
-  .live-layout{display:grid; grid-template-columns:1fr 360px; gap:20px; align-items:start;}
-  @media (max-width: 880px){ .live-layout{grid-template-columns:1fr;} }
-  .chat-card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); display:flex; flex-direction:column; height:640px; overflow:hidden;}
-  .chat-head{padding:17px 22px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; background:linear-gradient(180deg, var(--surface-2), var(--card));}
-  .chat-head .who{font-family:var(--font-display); font-weight:600; font-size:16.5px;}
-  .chat-head .disposition{font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.04em;}
-  .chat-scroll{flex:1; overflow-y:auto; padding:22px; display:flex; flex-direction:column; gap:14px;}
-  .msg{max-width:78%; padding:12px 16px; border-radius:14px; font-size:14.5px; line-height:1.55;}
-  .msg.you{align-self:flex-end; background:linear-gradient(135deg, #F0B94D, #E2795F); color:#241a06; border-bottom-right-radius:4px; font-weight:500;}
-  .msg.them{align-self:flex-start; background:var(--surface-2); color:var(--ink); border:1px solid var(--line-soft); border-bottom-left-radius:4px;}
-  .msg .role-tag{display:block; font-family:var(--font-mono); font-size:10px; letter-spacing:.05em; text-transform:uppercase; opacity:.65; margin-bottom:4px;}
-  .chat-input-row{display:flex; gap:10px; padding:16px; border-top:1px solid var(--line); background:var(--surface);}
-  .chat-input-row textarea{flex:1; border:1px solid var(--line); border-radius:10px; padding:11px 14px; font-size:14px; resize:none; min-height:46px; max-height:120px; background:var(--surface-2); color:var(--ink);}
-  .chat-input-row textarea:focus{outline:none; border-color:var(--amber); box-shadow:0 0 0 3px var(--amber-soft);}
-  .chat-input-row .btn-primary{align-self:flex-end;}
-  .typing{align-self:flex-start; color:var(--ink-faint); font-size:13px; font-style:italic;}
+  /* ---- cards ---- */
+  .card{ display:flex; flex-direction:column; gap:var(--space-2); padding:var(--space-4); border-radius:var(--radius-md); background:var(--color-surface); }
+  .card-kicker{ font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--color-accent); }
+  .elev-sm{ box-shadow:var(--shadow-sm); }
+  .elev-lg{ box-shadow:var(--shadow-lg); }
 
-  .sidebar{display:flex; flex-direction:column; gap:16px;}
-  .side-card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-sm); padding:18px 20px;}
-  .side-card h4{font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-faint); margin:0 0 12px; display:flex; align-items:center; justify-content:space-between;}
-  .side-card.plan-ref .plan-section{padding:12px 14px; font-size:13px; margin-bottom:10px; background:var(--surface-2);}
-  .side-card.plan-ref .plan-section h3{font-size:12px;}
-  .side-card.plan-ref .plan-section li{font-size:12.5px; margin-bottom:5px; color:var(--ink-soft);}
-  .collapsible-toggle{background:none; border:none; color:var(--teal); font-size:11.5px; font-weight:600; padding:0; margin-bottom:8px;}
+  /* ---- tags ---- */
+  .tag{ display:inline-flex; align-items:center; font-size:11px; letter-spacing:0.02em; padding:3px 10px; border-radius:calc(var(--radius-md) * 0.75); white-space:nowrap; }
+  .tag-accent{ background:var(--color-accent-800); color:var(--color-accent-100); }
+  .tag-outline{ border:1px solid var(--color-accent); color:var(--color-accent); }
 
-  .tag-note{display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--line-soft); font-size:13px; line-height:1.45;}
-  .tag-note:last-child{border-bottom:none; padding-bottom:0;}
-  .tag-dot{width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0; box-shadow:0 0 8px currentColor;}
-  .tag-dot.anchor{background:var(--amber); color:var(--amber-glow);}
-  .tag-dot.pushback{background:var(--clay); color:rgba(226,121,95,0.4);}
-  .tag-dot.term{background:var(--teal); color:rgba(69,196,176,0.4);}
-  .tag-note .tag-text{color:var(--ink-soft);}
-  .empty-note{color:var(--ink-faint); font-size:13px; font-style:italic;}
+  /* ---- dialog ---- */
+  .dialog-backdrop{ position:fixed; inset:0; z-index:30; display:grid; place-items:center; padding:var(--space-4); background:color-mix(in srgb, var(--color-neutral-900) 55%, transparent); }
+  .dialog{ width:min(440px, 100%); display:flex; flex-direction:column; gap:var(--space-3); padding:var(--space-4); border-radius:var(--radius-lg); background:var(--color-surface); box-shadow:var(--shadow-lg); }
+  .dialog-title{ font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:19px; margin:0; }
+  .dialog-body{ font-size:14px; opacity:0.85; margin:0; }
+  .dialog-actions{ display:flex; justify-content:flex-end; gap:var(--space-2); margin-top:var(--space-2); flex-wrap:wrap; }
 
-  .leave-btn{width:100%; background:transparent; border:1px solid var(--clay); color:var(--clay); font-weight:600; padding:12px; border-radius:10px; font-size:13.5px; transition:all .15s ease;}
-  .leave-btn:hover{background:var(--clay-soft); box-shadow:0 0 16px rgba(226,121,95,0.15);}
+  @keyframes pulse{ 0%,100%{ opacity:0.4; } 50%{ opacity:1; } }
+  @keyframes livepulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.35; } }
+  .skeleton-bar{ background:var(--color-neutral-800); border-radius:var(--radius-sm); animation:pulse 1.4s ease-in-out infinite; }
+  .live-dot{ animation:livepulse 1.3s ease-in-out infinite; }
 
-  /* ---- History ---- */
-  .history-header{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:26px;}
-  .scenario-group{margin-bottom:30px;}
-  .scenario-group-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; padding-bottom:9px; border-bottom:1px solid var(--line);}
-  .scenario-group-head .g-title{font-family:var(--font-display); font-size:17px; font-weight:600;}
-  .scenario-group-head .g-meta{font-family:var(--font-mono); font-size:11px; color:var(--ink-faint); text-transform:uppercase;}
-  .attempt-row{display:grid; grid-template-columns:110px 1fr 180px 160px; gap:14px; align-items:center; padding:15px 18px; border-radius:12px; border:1px solid var(--line-soft); background:var(--surface); margin-bottom:8px; cursor:pointer; transition:all .12s ease;}
-  .attempt-row:hover{border-color:var(--amber); background:var(--surface-hover); box-shadow:0 0 0 1px rgba(240,185,77,0.15);}
-  .attempt-date{font-family:var(--font-mono); font-size:12px; color:var(--ink-faint);}
-  .attempt-framework{font-size:13px; color:var(--ink-soft);}
-  .attempt-outcome{font-size:13px; font-weight:600; color:var(--teal);}
-  .attempt-outcome.pending{color:var(--ink-faint); font-weight:400; font-style:italic;}
-  @media (max-width:700px){ .attempt-row{grid-template-columns:1fr;} }
+  /* ---- app shell ---- */
+  .app-shell{ min-height:100vh; display:flex; }
+  .sidebar{
+    width:224px; flex:none; background:var(--color-surface); box-shadow:var(--shadow-sm);
+    display:flex; flex-direction:column; padding:var(--space-4) var(--space-3); gap:var(--space-6);
+    position:sticky; top:0; height:100vh;
+  }
+  .sidebar-brand{ display:flex; align-items:center; gap:10px; padding:0 6px; }
+  .brand-mark{ width:32px; height:32px; border-radius:var(--radius-md); border:1px solid var(--color-accent); display:flex; align-items:center; justify-content:center; color:var(--color-accent); font-size:16px; flex:none; }
+  .brand-text{ display:flex; flex-direction:column; line-height:1.15; min-width:0; }
+  .brand-name{ font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15.5px; letter-spacing:-0.01em; }
+  .brand-sub{ font-size:9.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-accent); }
+  .sidebar-nav{ display:flex; flex-direction:column; gap:3px; }
+  .sidebar-nav-btn{
+    display:flex; align-items:center; gap:10px; border:none; cursor:pointer; text-align:left;
+    padding:9px 10px; border-radius:var(--radius-md); font-size:13.5px; font-weight:600; font-family:inherit;
+    background:transparent; color:color-mix(in srgb, var(--color-text) 70%, transparent);
+  }
+  .sidebar-nav-btn i{ font-size:16px; flex:none; }
+  .sidebar-nav-btn.active{ background:color-mix(in srgb, var(--color-accent) 12%, transparent); color:var(--color-accent); }
+  .sidebar-footer{ margin-top:auto; display:flex; flex-direction:column; gap:10px; }
+  .sidebar-tagline{ font-size:11.5px; color:color-mix(in srgb, var(--color-text) 55%, transparent); }
+  .sidebar-user{ font-size:11px; color:color-mix(in srgb, var(--color-text) 45%, transparent); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
-  .empty-state{text-align:center; padding:90px 20px; color:var(--ink-soft);}
-  .empty-state .eyebrow{display:block; margin-bottom:10px; text-align:center;}
+  .main-area{ flex:1; min-width:0; overflow-y:auto; }
+  .main-area.flush{ height:100vh; overflow:hidden; display:flex; flex-direction:column; }
+  .screen{ padding:var(--space-8) 40px 64px; display:flex; flex-direction:column; gap:var(--space-6); }
 
-  .detail-header{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px;}
-  .detail-transcript{max-height:400px; overflow-y:auto; border:1px solid var(--line); border-radius:12px; padding:16px; background:var(--surface); margin-top:14px;}
-  .back-link{background:none; border:none; color:var(--ink-soft); font-size:13px; margin-bottom:18px; padding:0; font-weight:500;}
-  .back-link:hover{color:var(--amber);}
+  /* ---- setup ---- */
+  .concept-panel{
+    background:color-mix(in srgb, var(--color-text) 4%, var(--color-surface)); border:1px solid var(--color-divider);
+    border-radius:var(--radius-md); padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-4);
+  }
+  .chip-group{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip-toggle{ cursor:pointer; font-size:12.5px; font-weight:600; padding:6px 12px; border:1px solid var(--color-divider); background:transparent; color:color-mix(in srgb, var(--color-text) 65%, transparent); }
 
-  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
-  @media (max-width:800px){ .two-col{grid-template-columns:1fr;} }
+  /* ---- plan ---- */
+  .plan-section{ padding:var(--space-4); gap:8px; }
+  .plan-bullet{ display:flex; gap:8px; align-items:flex-start; }
+  .plan-bullet .dot{ color:var(--color-accent); margin-top:9px; flex:none; font-size:8px; }
+  .plan-bullet li{ flex:1; list-style:none; outline:none; border-radius:var(--radius-sm); padding:4px 6px; margin-left:-6px; font-size:14px; }
+  .plan-bullet li:hover{ background:color-mix(in srgb, var(--color-text) 5%, transparent); }
+  .plan-bullet li:focus{ background:color-mix(in srgb, var(--color-text) 5%, var(--color-surface)); box-shadow:0 0 0 1px var(--color-divider); }
 
-  /* ---- Mobile ---- */
+  /* ---- live ---- */
+  .live-toolbar{ padding:20px 40px 0; display:flex; flex-direction:column; gap:16px; flex:none; }
+  .live-toolbar-row{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .live-body{ flex:1; display:flex; gap:20px; padding:14px 40px 24px; overflow:hidden; min-height:0; }
+  .live-chat{ flex:0 0 63%; display:flex; flex-direction:column; min-width:0; }
+  .live-sidebar{ flex:0 0 34%; display:flex; flex-direction:column; gap:14px; overflow-y:auto; padding:4px; }
+  .msg-scroll{ flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:12px; padding:8px 4px; min-height:0; }
+  .msg-row{ display:flex; }
+  .msg-row.you{ justify-content:flex-end; }
+  .msg-row.them{ justify-content:flex-start; }
+  .msg{ max-width:74%; padding:11px 15px; border-radius:var(--radius-lg); font-size:14px; line-height:1.55; white-space:pre-wrap; }
+  .msg .role-tag{ display:block; font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; opacity:0.6; margin-bottom:2px; }
+  .msg.you{ background:var(--color-accent-800); color:var(--color-accent-100); }
+  .msg.them{ background:var(--color-surface); color:var(--color-text); box-shadow:var(--shadow-sm); }
+  .composer-row{ display:flex; gap:10px; padding-top:12px; flex:none; }
+  .composer-row .input{ flex:1; }
+
+  /* ---- history ---- */
+  .attempt-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:14px; }
+  .attempt-card{ cursor:pointer; padding:var(--space-4); gap:8px; }
+  .attempt-date{ font-size:11px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:color-mix(in srgb, var(--color-text) 45%, transparent); }
+
+  .two-col{ display:grid; grid-template-columns:62% 1fr; gap:24px; }
+
+  /* ---- mobile ---- */
+  @media (max-width:880px){
+    .live-layout, .two-col{ grid-template-columns:1fr; }
+    .two-col{ gap:16px; }
+  }
+  @media (max-width:820px){
+    .app-shell{ flex-direction:column; }
+    .sidebar{ width:100%; height:auto; position:static; flex-direction:row; align-items:center; flex-wrap:wrap; gap:var(--space-3); padding:var(--space-3); }
+    .sidebar-brand{ flex:none; }
+    .sidebar-nav{ flex-direction:row; flex:1; overflow-x:auto; }
+    .sidebar-footer{ display:none; }
+    .main-area.flush{ height:auto; overflow:visible; }
+    .live-body{ flex-direction:column; overflow:visible; }
+    .live-chat, .live-sidebar{ flex:1 1 auto; }
+    .msg-scroll{ max-height:50vh; }
+  }
   @media (max-width:640px){
-    .app{padding:20px 16px 60px;}
-    .topbar{flex-direction:column; align-items:flex-start; gap:12px; margin-bottom:28px;}
-    .topbar-actions{width:100%; justify-content:space-between; gap:12px;}
-    .nav-steps{gap:5px;}
-    .nav-steps span{padding:6px 10px; font-size:10px;}
-    .card{padding:20px;}
-    .row2{grid-template-columns:1fr; gap:0;}
-    .actions-row{flex-wrap:wrap;}
-    .actions-row.split{gap:12px;}
-    .actions-row.split .btn{flex:1; justify-content:center;}
-    .chat-card{height:calc(100vh - 160px); min-height:420px;}
-    .msg{max-width:90%;}
-    .history-header, .detail-header{flex-direction:column; align-items:flex-start; gap:14px;}
-    .scenario-group-head{flex-direction:column; align-items:flex-start; gap:4px;}
+    .screen{ padding:var(--space-6) 18px 48px; }
+    .row2{ grid-template-columns:1fr; }
+    .live-toolbar{ padding:16px 18px 0; }
+    .live-body{ padding:14px 18px 20px; }
+    .msg{ max-width:90%; }
   }
 </style>
 </head>
 <body>
-<div class="app" id="app"></div>
+<div id="app-root"></div>
 
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -225,9 +248,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ---------------- Auth state ---------------- */
 let SESSION = null;
-let AUTH_MODE = 'signin'; // 'signin' | 'signup'
 let AUTH_ERROR = '';
-let AUTH_NOTICE = '';
 let AUTH_BUSY = false;
 
 async function initAuth(){
@@ -282,6 +303,13 @@ function groupKeyFor(name,title,goal){
   return (name.trim()+'|'+title.trim()+'|'+goal.trim()).toLowerCase();
 }
 
+async function deleteAttemptRecord(id){
+  if(!id) return;
+  const { error } = await supabase.from('attempts').delete().eq('id', id);
+  if(error) console.error('deleteAttemptRecord failed', error);
+  DATA.attempts = DATA.attempts.filter(a=>a.id!==id);
+}
+
 /* ---------------- AI helper (routed through our serverless proxy) ---------------- */
 async function askAI(system, messages, wantJSON){
   let text = '';
@@ -309,13 +337,28 @@ async function askAI(system, messages, wantJSON){
 }
 
 /* ---------------- App state ---------------- */
-let VIEW = 'home'; // home | setup | plan | live | history | detail
+let VIEW = 'home'; // home | setup | plan | live | detail | settings
 let draft = null;     // in-progress setup+plan+attempt object being built
 let historyDetail = null; // attempt id being viewed read-only
-let detailOrigin = 'history'; // 'home' | 'history' — where to return to from the detail view
 let planLoading = false;
 let liveLoading = false;
 let summaryLoading = false;
+let showLeaveDialog = false;
+
+const DETAIL_KEY = 'accord-response-detail-v1';
+let RESPONSE_DETAIL = 'concise'; // 'concise' | 'detailed'
+
+function loadResponseDetail(){
+  try{
+    const v = localStorage.getItem(DETAIL_KEY);
+    if(v === 'concise' || v === 'detailed') RESPONSE_DETAIL = v;
+  }catch(e){}
+}
+function setResponseDetail(v){
+  RESPONSE_DETAIL = v;
+  try{ localStorage.setItem(DETAIL_KEY, v); }catch(e){}
+  render();
+}
 
 const FRAMEWORKS = [
   { id: 'seven', label: 'Seven Elements' },
@@ -325,156 +368,246 @@ const FRAMEWORKS = [
   { id: 'two', label: '2 Elements (Interests + BATNA)' }
 ];
 const CONCEPTS = ['Anchoring high','Conceding too fast','Single-issue price lock','Revealing urgency'];
+const STEP_LABELS = ['Set the scene', 'Prep plan', 'Practice'];
 
 function frameworkLabel(id){
   const f = FRAMEWORKS.find(f=>f.id===id);
   return f ? f.label : '2 Elements (Interests + BATNA)';
 }
 
+// Harmonious hues sharing the accent's tonal weight (L≈30%/92%, C≈0.075/0.035) — badges
+// read as one tonal family stretched across hue, not an unrelated rainbow.
+const HUES = { accent:289, indigo:255, blue:228, cyan:200, teal:176, green:142, amber:78, rose:18 };
+function tone(hue){ return { bg:'oklch(30% 0.075 '+hue+')', color:'oklch(92% 0.035 '+hue+')' }; }
+const FRAMEWORK_HUES = { seven:HUES.indigo, core:HUES.teal, anchor:HUES.amber, multi:HUES.cyan, two:HUES.accent };
+const CONCEPT_HUES = { 'Anchoring high':HUES.rose, 'Conceding too fast':HUES.amber, 'Single-issue price lock':HUES.cyan, 'Revealing urgency':HUES.blue };
+const SUMMARY_TYPE_HUES = { anchor:HUES.green, pushback:HUES.rose, term:HUES.blue };
+
+function outcomeHue(status, outcome){
+  if(status === 'in-progress') return HUES.accent;
+  const t = (outcome||'').toLowerCase();
+  if(/agree|deal|approved|sounds fair|move forward/.test(t)) return HUES.green;
+  if(/held|no budget|can't|unable|not able/.test(t)) return HUES.rose;
+  if(/defer|review|later|circle back|next quarter/.test(t)) return HUES.amber;
+  return HUES.blue;
+}
+
 /* ---------------- Render root ---------------- */
 function render(){
-  const app = document.getElementById('app');
+  const root = document.getElementById('app-root');
 
   if(!SESSION){
-    app.innerHTML = `
-      <div class="topbar">
-        <div class="brand" style="cursor:default;">
-          <span class="brand-mark">The Rehearsal Room</span>
-          <span class="brand-sub">Raise negotiation practice</span>
-        </div>
-      </div>
-      <div id="screen"></div>
-    `;
-    document.getElementById('screen').innerHTML = renderAuth();
+    root.innerHTML = renderAuth();
     attachAuthHandlers();
     return;
   }
 
-  app.innerHTML = `
-    <div class="topbar">
-      <button class="brand" id="btn-home" title="Home">
-        <span class="brand-mark">The Rehearsal Room</span>
-        <span class="brand-sub">Raise negotiation practice</span>
-      </button>
-      <div class="topbar-actions">
-        <div class="nav-steps">
-          <span class="${stepClass('setup')}">1 · Setup</span>
-          <span class="${stepClass('plan')}">2 · Plan</span>
-          <span class="${stepClass('live')}">3 · Simulation</span>
-          <span class="${stepClass('history')}">4 · History</span>
+  const homeActive = (VIEW === 'home' || VIEW === 'detail') ? 'active' : '';
+  const settingsActive = VIEW === 'settings' ? 'active' : '';
+
+  root.innerHTML = `
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <div class="brand-mark"><i class="ph-bold ph-scales"></i></div>
+          <div class="brand-text">
+            <span class="brand-name">The Rehearsal Room</span>
+            <span class="brand-sub">Raise negotiation practice</span>
+          </div>
         </div>
-        <button class="btn-text" id="btn-sign-out" style="color:var(--ink-faint);" title="${esc(SESSION.user.email)}">Sign out</button>
-      </div>
+        <nav class="sidebar-nav">
+          <button class="sidebar-nav-btn ${homeActive}" id="nav-home"><i class="ph-bold ph-house"></i>Home</button>
+          <button class="sidebar-nav-btn" id="nav-new"><i class="ph-bold ph-plus-circle"></i>New scenario</button>
+          <button class="sidebar-nav-btn ${settingsActive}" id="nav-settings"><i class="ph-bold ph-gear-six"></i>Settings</button>
+        </nav>
+        <div class="sidebar-footer">
+          <div class="hr"></div>
+          <span class="sidebar-tagline">Rehearse the raise conversation before you have it.</span>
+          <span class="sidebar-user" title="${esc(SESSION.user.email)}">${esc(SESSION.user.email)}</span>
+          <button class="btn btn-ghost" id="btn-sign-out" style="align-self:flex-start;padding-inline:0">Sign out</button>
+        </div>
+      </aside>
+      <main class="main-area${VIEW==='live' ? ' flush' : ''}" id="mainArea">
+        <div id="screen"></div>
+      </main>
     </div>
-    <div id="screen"></div>
   `;
-  document.getElementById('btn-home').onclick = ()=>{ VIEW='home'; render(); };
+  document.getElementById('nav-home').onclick = goHome;
+  document.getElementById('nav-new').onclick = startNewScenario;
+  document.getElementById('nav-settings').onclick = ()=>{ VIEW='settings'; render(); };
   document.getElementById('btn-sign-out').onclick = async ()=>{ await supabase.auth.signOut(); };
+
   const screen = document.getElementById('screen');
   if(VIEW==='home') screen.innerHTML = renderHome();
   else if(VIEW==='setup') screen.innerHTML = renderSetup();
   else if(VIEW==='plan') screen.innerHTML = renderPlan();
   else if(VIEW==='live') screen.innerHTML = renderLive();
-  else if(VIEW==='history') screen.innerHTML = renderHistory();
   else if(VIEW==='detail') screen.innerHTML = renderDetail();
+  else if(VIEW==='settings') screen.innerHTML = renderSettings();
   attachHandlers();
 }
-function stepClass(name){
-  const order = ['setup','plan','live','history'];
-  const effectiveView = VIEW==='detail' ? detailOrigin : VIEW;
-  if(order.indexOf(effectiveView)===-1) return ''; // 'home' isn't part of the stepper
-  if(name===effectiveView) return 'active';
-  return order.indexOf(name) < order.indexOf(effectiveView) ? 'done' : '';
+
+function goHome(){ historyDetail = null; VIEW = 'home'; render(); }
+function startNewScenario(){ draft = null; VIEW = 'setup'; render(); }
+
+function renderStepper(activeIndex){
+  const items = STEP_LABELS.map((label, i)=>{
+    const filled = i <= activeIndex;
+    return {
+      label, number: i+1,
+      circleBg: filled ? 'var(--color-accent-800)' : 'transparent',
+      circleColor: filled ? 'var(--color-accent-100)' : 'color-mix(in srgb, var(--color-text) 45%, transparent)',
+      circleBorder: filled ? 'var(--color-accent)' : 'var(--color-divider)',
+      textColor: filled ? 'var(--color-text)' : 'color-mix(in srgb, var(--color-text) 45%, transparent)',
+      lineColor: i < activeIndex ? 'var(--color-accent)' : 'var(--color-divider)',
+      hasNext: i < STEP_LABELS.length - 1,
+    };
+  });
+  return `<div style="display:flex;align-items:center;gap:0">
+    ${items.map(it=>`
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;background:${it.circleBg};color:${it.circleColor};border:1px solid ${it.circleBorder};flex:none">${it.number}</div>
+        <span style="font-size:13px;font-weight:600;color:${it.textColor}">${esc(it.label)}</span>
+      </div>
+      ${it.hasNext ? `<div style="width:32px;height:1px;background:${it.lineColor};margin:0 10px;flex:none"></div>` : ''}
+    `).join('')}
+  </div>`;
 }
 
 /* ---------------- Screen: Setup ---------------- */
 function renderSetup(){
   const p = draft && draft.prefill ? draft.prefill : {};
+  const fw = (draft && draft.framework) || '';
+  const fwTone = tone(FRAMEWORK_HUES[fw] ?? HUES.accent);
+  const concepts = (draft && draft.concepts) || [];
   return `
-  <div class="setup-wrap">
-    <span class="eyebrow">Before you sit down at the table</span>
-    <h1 style="font-size:28px; margin-bottom:6px;">Set the scene</h1>
-    <p class="muted" style="margin-bottom:26px;">A few details about you and the ask. This stays private to this rehearsal.</p>
-    <div class="card">
+  <div class="screen" style="max-width:680px">
+    ${renderStepper(0)}
+    <div>
+      <h1>Set the scene</h1>
+      <p class="text-muted" style="font-size:14.5px">A few details about you and the ask. The more specific this is, the sharper your plan and your AI manager will be.</p>
+    </div>
+    <div class="card elev-sm" style="padding:var(--space-6);gap:var(--space-4)">
+      <span class="card-kicker">The essentials</span>
       <div class="row2">
         <div class="field">
           <label>Your name</label>
-          <input type="text" id="f-name" value="${esc(p.name||'')}" placeholder="Francisca">
+          <input class="input" id="f-name" type="text" value="${esc(p.name||'')}" placeholder="Jordan">
         </div>
         <div class="field">
           <label>Your title</label>
-          <input type="text" id="f-title" value="${esc(p.title||'')}" placeholder="Senior Consultant">
+          <input class="input" id="f-title" type="text" value="${esc(p.title||'')}" placeholder="Senior Product Designer">
         </div>
       </div>
       <div class="field">
-        <label>Current goal of the raise</label>
-        <textarea id="f-goal" placeholder="e.g. Asking for 12% based on new client-lead scope taken on since March">${esc(p.goal||'')}</textarea>
-        <div class="hint">Target % or number, or the trigger — promotion, market correction, new scope.</div>
+        <label>Goal of the raise</label>
+        <textarea class="input" id="f-goal" placeholder="e.g. Asking for 12% and a title bump to Staff Designer — took on the design-system rebuild this year with no comp change.">${esc(p.goal||'')}</textarea>
+        <span class="text-muted" style="font-size:12px">Target % or number, or the trigger — promotion, market correction, new scope.</span>
       </div>
-      <div class="divider"></div>
-      <div class="row2">
-        <div class="field">
-          <label>Manager's name <span class="muted">(optional)</span></label>
-          <input type="text" id="f-mgr-name" value="${esc(p.mgrName||'')}" placeholder="Diane">
+
+      <div class="concept-panel">
+        <div>
+          <span class="card-kicker">Optional &mdash; sharpen the simulation</span>
+          <p class="text-muted" style="margin:4px 0 0;font-size:12px">Skip any of this and we'll use sensible defaults.</p>
         </div>
-        <div class="field">
-          <label>Manager's likely disposition <span class="muted">(optional)</span></label>
-          <input type="text" id="f-mgr-disp" value="${esc(p.mgrDisp||'')}" placeholder="Budget-constrained, avoids confrontation">
+        <div class="row2">
+          <div class="field" style="margin-bottom:0">
+            <label>Manager's name</label>
+            <input class="input" id="f-mgr-name" type="text" value="${esc(p.mgrName||'')}" placeholder="Priya">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Likely disposition</label>
+            <input class="input" id="f-mgr-disp" type="text" value="${esc(p.mgrDisp||'')}" placeholder="Budget-constrained, data-driven">
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>Framework to test</label>
+          <select class="input" id="f-framework">
+            <option value="">Not selected &mdash; defaults to 2 Elements Framework</option>
+            ${FRAMEWORKS.filter(f=>f.id!=='two').map(f=>`<option value="${f.id}" ${fw===f.id?'selected':''}>${esc(f.label)}</option>`).join('')}
+          </select>
+          <div style="margin-top:8px">
+            <span class="tag" id="framework-badge" style="background:${fwTone.bg};color:${fwTone.color}"><i class="ph-bold ph-flask" style="margin-right:4px"></i>${esc(frameworkLabel(fw))}</span>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>Concepts to stress-test</label>
+          <div class="chip-group" id="concept-chips">
+            ${CONCEPTS.map(c=>{
+              const active = concepts.includes(c);
+              const t = tone(CONCEPT_HUES[c]);
+              return `<span class="chip-toggle" data-concept="${esc(c)}" style="${active?`background:${t.bg};color:${t.color};border-color:transparent`:''}">${esc(c)}</span>`;
+            }).join('')}
+          </div>
+          <span class="text-muted" style="font-size:12px">Selected habits get worked into the AI manager's replies, without naming them.</span>
         </div>
       </div>
-      <div class="divider"></div>
-      <div class="field">
-        <label>Framework to test <span class="muted">(optional — defaults to 2 Elements)</span></label>
-        <select id="f-framework">
-          <option value="">— No preference (2 Elements Framework) —</option>
-          ${FRAMEWORKS.filter(f=>f.id!=='two').map(f=>`<option value="${f.id}" ${draft&&draft.framework===f.id?'selected':''}>${f.label}</option>`).join('')}
-        </select>
-      </div>
-      <div class="field">
-        <label>Concepts to stress-test <span class="muted">(optional)</span></label>
-        <div class="chip-group" id="concept-chips">
-          ${CONCEPTS.map(c=>`<div class="chip" data-concept="${esc(c)}">${esc(c)}</div>`).join('')}
-        </div>
-      </div>
-      <div class="divider"></div>
-      <div class="actions-row">
-        <button class="btn btn-primary" id="btn-build-plan">Build my plan →</button>
-      </div>
+
+      <button class="btn btn-primary btn-block" id="btn-build-plan" style="font-size:14.5px;padding:13px" disabled>
+        <i class="ph-bold ph-arrow-right"></i> Build my plan
+      </button>
+      <span class="text-muted" id="setup-helper" style="font-size:12px;text-align:center;display:none"></span>
     </div>
   </div>`;
 }
 
 /* ---------------- Screen: Plan ---------------- */
 function renderPlan(){
+  const fwTone = tone(FRAMEWORK_HUES[draft ? draft.framework : ''] ?? HUES.accent);
+  const fwLabel = frameworkLabel(draft ? draft.framework : '');
   if(planLoading){
-    return `<div class="setup-wrap"><div class="card"><div class="loading-row"><div class="spinner"></div> Drafting your prep plan…</div></div></div>`;
+    return `
+    <div class="screen" style="max-width:700px">
+      ${renderStepper(1)}
+      <h2>Your prep plan</h2>
+      <div class="card elev-sm" style="padding:var(--space-4);gap:10px">
+        <div class="skeleton-bar" style="width:120px;height:11px"></div>
+        <div class="skeleton-bar" style="width:100%;height:13px"></div>
+        <div class="skeleton-bar" style="width:85%;height:13px"></div>
+      </div>
+      <div class="card elev-sm" style="padding:var(--space-4);gap:10px">
+        <div class="skeleton-bar" style="width:90px;height:11px"></div>
+        <div class="skeleton-bar" style="width:95%;height:13px"></div>
+        <div class="skeleton-bar" style="width:70%;height:13px"></div>
+      </div>
+    </div>`;
   }
   if(!draft || !draft.plan){
-    return `<div class="setup-wrap"><div class="card"><p class="muted">No plan yet.</p></div></div>`;
+    return `<div class="screen" style="max-width:700px">${renderStepper(1)}<p class="text-muted">No plan yet.</p></div>`;
   }
   const p = draft.plan;
   return `
-  <div class="setup-wrap">
-    <span class="eyebrow">${esc(frameworkLabel(draft.framework))}</span>
-    <h1 style="font-size:26px; margin-bottom:6px;">Your prep plan</h1>
-    <p class="muted" style="margin-bottom:22px;">Tap any line to edit it before you start. This stays visible during the simulation.</p>
-    <div class="plan-grid">
-      ${p.sections.map((s,si)=>`
-        <div class="plan-section">
-          <h3>${esc(s.title)}</h3>
-          <ul>
-            ${s.bullets.map((b,bi)=>`<li contenteditable="true" data-si="${si}" data-bi="${bi}">${esc(b)}</li>`).join('')}
-          </ul>
+  <div class="screen" style="max-width:700px">
+    ${renderStepper(1)}
+    <div style="display:flex;align-items:flex-end;gap:16px">
+      <div style="flex:1">
+        <h2>Your prep plan</h2>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="tag" style="background:${fwTone.bg};color:${fwTone.color}">${esc(fwLabel)}</span>
+          <span class="text-muted" style="font-size:12px">click any point below to edit it</span>
         </div>
-      `).join('')}
-      <div class="reminder-block">
-        Concessions should feel costly — trade, don't donate.<br>
-        Decreasing concession size signals your limit is near.
       </div>
+      <button class="btn btn-secondary" id="btn-regenerate" style="font-size:13px"><i class="ph-bold ph-arrow-clockwise"></i> Regenerate</button>
     </div>
-    <div class="actions-row split" style="margin-top:22px;">
-      <button class="btn btn-ghost" id="btn-back-setup">← Back to setup</button>
-      <button class="btn btn-primary" id="btn-start-negotiation">Start negotiation →</button>
+    ${(p.sections||[]).map((s,si)=>`
+      <div class="card elev-sm plan-section">
+        <span class="card-kicker">${esc(s.title)}</span>
+        ${(s.bullets||[]).map((b,bi)=>`
+          <div class="plan-bullet">
+            <span class="dot">&#9679;</span>
+            <li contenteditable="true" data-si="${si}" data-bi="${bi}">${esc(b)}</li>
+          </div>
+        `).join('')}
+      </div>
+    `).join('')}
+    <div class="card elev-sm" style="padding:var(--space-4);gap:6px">
+      <span class="card-kicker"><i class="ph-bold ph-lightbulb-filament"></i> Tip</span>
+      <p style="margin:0;font-size:13px;opacity:0.85">Concessions should feel costly &mdash; trade, don't donate.</p>
+      <p style="margin:0;font-size:13px;opacity:0.85">Decreasing concession size signals your limit is near.</p>
+    </div>
+    <div style="display:flex;justify-content:space-between;gap:12px">
+      <button class="btn btn-secondary" id="btn-back-setup">&larr; Back to setup</button>
+      <button class="btn btn-primary" id="btn-start-negotiation" style="font-size:14.5px;padding:12px 22px">Start negotiation <i class="ph-bold ph-arrow-right"></i></button>
     </div>
   </div>`;
 }
@@ -483,58 +616,96 @@ function renderPlan(){
 function renderLive(){
   const a = draft;
   const transcript = a.transcript || [];
-  const mgrName = a.prefill.mgrName || 'your manager';
+  const mgrName = a.prefill.mgrName || 'the manager';
   const mgrDisp = a.prefill.mgrDisp || 'Disposition not specified';
   return `
-  <div class="live-layout">
-    <div class="chat-card">
-      <div class="chat-head">
-        <div>
-          <div class="who">${esc(mgrName)}</div>
-          <div class="disposition">${esc(mgrDisp)}</div>
-        </div>
-        <div class="disposition">Live rehearsal</div>
-      </div>
-      <div class="chat-scroll" id="chat-scroll">
-        ${transcript.length===0 ? `<div class="empty-note">Open with your ask, or ease into it — your call. ${esc(mgrName)} is listening.</div>` : ''}
+  <div class="live-toolbar">
+    ${renderStepper(2)}
+    <div class="live-toolbar-row">
+      <button class="btn btn-secondary" id="btn-pause" style="font-size:13px"><i class="ph-bold ph-arrow-left"></i> Continue later</button>
+      <span class="text-muted" style="font-size:13px">Live simulation with ${esc(mgrName)}</span>
+      <span style="display:inline-flex;align-items:center;gap:5px;margin-left:auto;font-family:var(--font-heading);font-size:11px;letter-spacing:0.08em;color:var(--color-accent)">
+        <span class="live-dot" style="width:6px;height:6px;border-radius:50%;background:var(--color-accent);display:inline-block"></span>LIVE
+      </span>
+    </div>
+  </div>
+  <div class="live-body">
+    <div class="live-chat">
+      <div class="msg-scroll" id="chat-scroll">
+        ${transcript.length===0 ? `
+          <div class="card elev-sm" style="padding:var(--space-4);gap:8px">
+            <span class="card-kicker">Get started</span>
+            <p style="margin:0;font-size:14px">Open with your ask, or use a suggested line to break the ice:</p>
+            <p style="margin:0;font-size:13px;font-style:italic" class="text-muted">"Hi ${esc(mgrName)}, do you have a few minutes to talk through my role and compensation?"</p>
+            <button class="btn btn-secondary" id="btn-use-opener" style="align-self:flex-start;font-size:13px">Use this opener</button>
+          </div>` : ''}
         ${transcript.map(m=>`
-          <div class="msg ${m.role==='user'?'you':'them'}">
-            <span class="role-tag">${m.role==='user'?'You':esc(mgrName)}</span>${esc(m.text)}
+          <div class="msg-row ${m.role==='user'?'you':'them'}">
+            <div class="msg ${m.role==='user'?'you':'them'}">
+              <span class="role-tag">${m.role==='user' ? esc(a.prefill.name||'You') : esc(mgrName)}</span>${esc(m.text)}
+            </div>
           </div>
         `).join('')}
-        ${liveLoading ? `<div class="typing">${esc(mgrName)} is thinking…</div>` : ''}
+        ${liveLoading ? `
+          <div class="msg-row them">
+            <div class="card elev-sm" style="padding:11px 15px">
+              <span class="text-muted" style="font-size:13px">${esc(mgrName)} is typing&hellip;</span>
+            </div>
+          </div>` : ''}
       </div>
-      <div class="chat-input-row">
-        <textarea id="chat-input" placeholder="Type what you'd say next…" ${liveLoading?'disabled':''}></textarea>
-        <button class="btn btn-primary" id="btn-send" ${liveLoading?'disabled':''}>Send</button>
+      <div class="composer-row">
+        <input class="input" id="chat-input" placeholder="Say something&hellip;" ${liveLoading?'disabled':''} />
+        <button class="btn btn-primary" id="btn-send" ${liveLoading?'disabled':''} style="padding:0 22px"><i class="ph-bold ph-paper-plane-tilt"></i> Send</button>
+      </div>
+      <span class="text-muted" style="font-size:11px;margin-top:4px">Press Enter to send, Shift+Enter for a new line.</span>
+    </div>
+
+    <div class="live-sidebar">
+      <div class="card elev-sm" style="padding:var(--space-4);gap:8px">
+        <div style="display:flex;align-items:center">
+          <h5 style="margin:0">The plan</h5>
+          <button class="btn btn-ghost" id="toggle-plan" style="margin-left:auto;font-size:12px;padding:2px 6px">${a.planCollapsed ? 'Show' : 'Hide'}</button>
+        </div>
+        ${!a.planCollapsed ? (a.plan.sections||[]).map(s=>`
+          <div style="margin-top:6px">
+            <span class="card-kicker">${esc(s.title)}</span>
+            ${(s.bullets||[]).map(b=>`<p class="text-muted" style="margin:3px 0 0;font-size:13px">&#8226; ${esc(b)}</p>`).join('')}
+          </div>
+        `).join('') : ''}
+      </div>
+
+      <div class="card elev-sm" style="padding:var(--space-4);gap:8px">
+        <h5 style="margin:0">Live summary ${summaryLoading?'&middot; updating…':''}</h5>
+        ${(a.summaryTags && a.summaryTags.length) ? `
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px">
+            ${a.summaryTags.map(t=>{
+              const tt = tone(SUMMARY_TYPE_HUES[t.type] || HUES.accent);
+              return `<span class="tag" style="background:${tt.bg};color:${tt.color}">${esc(t.text)}</span>`;
+            }).join('')}
+          </div>` : `<p class="text-muted" style="margin:0;font-size:13px">Nothing tracked yet &mdash; start talking.</p>`}
+      </div>
+
+      <button class="btn btn-primary btn-block" id="btn-close-agreement" style="font-size:13.5px;font-weight:700"><i class="ph-bold ph-handshake"></i> Close with agreement</button>
+      <button class="btn btn-secondary" id="btn-leave" style="font-size:13.5px"><i class="ph-bold ph-sign-out"></i> Leave negotiation</button>
+    </div>
+  </div>
+
+  ${showLeaveDialog ? `
+  <div class="dialog-backdrop">
+    <div class="dialog">
+      <h4 class="dialog-title">Save this attempt?</h4>
+      <p class="dialog-body">Your transcript, plan and summary will be saved to History so you can review or try a different approach later.</p>
+      <div class="dialog-actions">
+        <button class="btn btn-ghost" id="btn-leave-cancel">Cancel</button>
+        <button class="btn btn-secondary" id="btn-leave-discard">Discard</button>
+        <button class="btn btn-primary" id="btn-leave-save">Save &amp; exit</button>
       </div>
     </div>
-    <div class="sidebar">
-      <div class="side-card plan-ref">
-        <h4>The plan</h4>
-        <button class="collapsible-toggle" id="toggle-plan">${a.planCollapsed? 'Show ▾' : 'Hide ▴'}</button>
-        ${a.planCollapsed ? '' : a.plan.sections.map(s=>`
-          <div class="plan-section">
-            <h3>${esc(s.title)}</h3>
-            <ul>${s.bullets.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>
-          </div>
-        `).join('')}
-      </div>
-      <div class="side-card">
-        <h4>Live summary ${summaryLoading?'· updating…':''}</h4>
-        ${(a.summaryTags && a.summaryTags.length) ? a.summaryTags.map(t=>`
-          <div class="tag-note">
-            <div class="tag-dot ${t.type||'term'}"></div>
-            <div class="tag-text">${esc(t.text)}</div>
-          </div>
-        `).join('') : '<div class="empty-note">Nothing tracked yet — it fills in as you talk.</div>'}
-      </div>
-      <button class="leave-btn" id="btn-leave">Leave negotiation</button>
-    </div>
-  </div>`;
+  </div>` : ''}
+  `;
 }
 
-/* ---------------- Screen: History ---------------- */
+/* ---------------- Screen: Home ---------------- */
 function groupAttempts(){
   const groups = {};
   DATA.scenarios.forEach(s=>{ groups[s.groupKey] = { meta: s, attempts: [] }; });
@@ -550,114 +721,133 @@ function groupAttempts(){
 
 function renderScenarioGroups(groupList){
   return groupList.map(g=>`
-    <div class="scenario-group">
-      <div class="scenario-group-head">
-        <div class="g-title">${esc(g.meta.name)} — ${esc(g.meta.title)}</div>
-        <div class="g-meta">${g.attempts.length} attempt${g.attempts.length>1?'s':''}</div>
+    <section style="margin-bottom:14px">
+      <span class="card-kicker">${esc(g.meta.name)} &middot; ${esc(g.meta.title)}</span>
+      <p class="text-muted" style="font-size:13px;margin:4px 0 14px;max-width:640px">${esc(g.meta.goal)}</p>
+      <div class="attempt-grid">
+        ${g.attempts.map(at=>{
+          const isInProgress = at.status === 'in-progress';
+          const label = isInProgress ? 'In progress' : (at.outcome || 'Completed');
+          const t = tone(outcomeHue(at.status, at.outcome));
+          return `
+          <div class="card elev-sm attempt-card" data-attempt="${at.id}">
+            <span class="attempt-date">${new Date(at.createdAt).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}</span>
+            <h5 style="margin:0">${esc(frameworkLabel(at.framework))}</h5>
+            <span class="tag" style="align-self:flex-start;background:${t.bg};color:${t.color}">${esc(label)}</span>
+            ${isInProgress
+              ? `<button class="btn btn-primary btn-resume" data-attempt="${at.id}" style="align-self:flex-start;font-size:12px;padding:6px 12px">Resume</button>`
+              : `<button class="btn btn-ghost btn-try-different" data-scenario="${g.meta.id}" style="align-self:flex-start;font-size:12px;padding:2px 4px">Try a different approach</button>`}
+          </div>`;
+        }).join('')}
       </div>
-      <p class="muted" style="margin:0 0 10px;">${esc(g.meta.goal)}</p>
-      ${g.attempts.map(at=>`
-        <div class="attempt-row" data-attempt="${at.id}">
-          <div class="attempt-date">${new Date(at.createdAt).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</div>
-          <div class="attempt-framework">${esc(frameworkLabel(at.framework))}</div>
-          <div class="attempt-outcome ${at.outcome?'':'pending'}">${esc(at.outcome || 'In progress')}</div>
-          <button class="btn-text btn-try-different" data-scenario="${g.meta.id}">Try a different approach</button>
-        </div>
-      `).join('')}
-    </div>
+    </section>
   `).join('');
 }
 
-/* ---------------- Screen: Home ---------------- */
 function renderHome(){
   const groupList = groupAttempts();
-  if(groupList.length===0){
-    return `
-    <div class="empty-state">
-      <span class="eyebrow">Welcome</span>
-      <h2 style="font-size:22px; margin-bottom:14px;">Rehearse your next negotiation</h2>
-      <p class="muted" style="margin-bottom:24px;">Set the scene, get a prep plan, and practice live with an AI manager. Your simulations will collect here.</p>
-      <button class="btn btn-primary" id="btn-new-scenario">Start a simulation →</button>
-    </div>`;
-  }
   return `
-  <div>
-    <div class="history-header">
-      <div>
-        <span class="eyebrow">Welcome back</span>
-        <h1 style="font-size:26px;">Your rehearsals</h1>
+  <div class="screen" style="max-width:1040px">
+    <div style="display:flex;align-items:center;gap:16px">
+      <div style="flex:1">
+        <h1 style="font-size:26px">Your negotiations</h1>
+        <p class="text-muted" style="margin:0;font-size:14px">Every simulation you save lands here, grouped by scenario.</p>
       </div>
-      <button class="btn btn-primary" id="btn-new-scenario">New simulation →</button>
+      <button class="btn btn-primary" id="btn-new-scenario"><i class="ph-bold ph-plus-circle"></i> New scenario</button>
     </div>
-    ${renderScenarioGroups(groupList)}
-  </div>`;
-}
-
-/* ---------------- Screen: History ---------------- */
-function renderHistory(){
-  if(DATA.attempts.length===0){
-    return `
-    <div class="empty-state">
-      <span class="eyebrow">Nothing rehearsed yet</span>
-      <h2 style="font-size:22px; margin-bottom:14px;">Your past attempts will collect here</h2>
-      <p class="muted" style="margin-bottom:24px;">Run a negotiation once and it'll show up in this history, grouped by scenario.</p>
-      <button class="btn btn-primary" id="btn-new-scenario">Start a scenario →</button>
-    </div>`;
-  }
-  return `
-  <div>
-    <div class="history-header">
-      <div>
-        <span class="eyebrow">Past rehearsals</span>
-        <h1 style="font-size:26px;">History</h1>
-      </div>
-      <button class="btn btn-primary" id="btn-new-scenario">New scenario →</button>
-    </div>
-    ${renderScenarioGroups(groupAttempts())}
+    ${groupList.length===0 ? `
+      <div class="card elev-sm" style="padding:var(--space-6);gap:12px;align-items:flex-start">
+        <p style="margin:0;font-size:14.5px">No negotiations yet.</p>
+        <button class="btn btn-primary" id="btn-first-scenario">Start your first negotiation</button>
+      </div>` : renderScenarioGroups(groupList)}
   </div>`;
 }
 
 /* ---------------- Screen: Detail (read-only) ---------------- */
 function renderDetail(){
   const at = DATA.attempts.find(a=>a.id===historyDetail);
-  if(!at) return `<p class="muted">Attempt not found.</p>`;
+  if(!at) return `<div class="screen"><p class="text-muted">Attempt not found.</p></div>`;
   const sc = DATA.scenarios.find(s=>s.id===at.scenarioId);
+  const label = at.status==='in-progress' ? 'In progress' : (at.outcome || 'Completed');
+  const t = tone(outcomeHue(at.status, at.outcome));
   return `
-  <div>
-    <button class="back-link" id="btn-back-history">← Back to ${detailOrigin==='home' ? 'home' : 'history'}</button>
-    <div class="detail-header">
-      <div>
-        <span class="eyebrow">${esc(frameworkLabel(at.framework))}</span>
-        <h1 style="font-size:24px;">${esc(sc.name)} — ${esc(sc.title)}</h1>
-        <p class="muted" style="margin-top:6px;">${esc(sc.goal)}</p>
-      </div>
-      <div class="attempt-outcome" style="font-size:15px;">${esc(at.outcome||'In progress')}</div>
+  <div class="screen" style="max-width:1100px">
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <button class="btn btn-secondary" id="btn-back-home"><i class="ph-bold ph-arrow-left"></i> Back to home</button>
+      <h3 style="margin:0;flex:1">${esc(frameworkLabel(at.framework))}</h3>
+      <span class="tag" style="background:${t.bg};color:${t.color}">${esc(label)}</span>
+      <button class="btn btn-primary" id="btn-try-different-detail" data-scenario="${sc ? sc.id : ''}">Try a different approach</button>
     </div>
+    ${sc ? `<p class="text-muted" style="margin:0;font-size:13px">${esc(sc.name)} &middot; ${esc(sc.title)} &mdash; ${esc(sc.goal)}</p>` : ''}
     <div class="two-col">
-      <div class="card">
-        <h4 style="font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); margin-bottom:14px;">Plan used</h4>
-        ${at.plan.sections.map(s=>`
-          <div class="plan-section">
-            <h3>${esc(s.title)}</h3>
-            <ul>${s.bullets.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>
-          </div>
-        `).join('')}
+      <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+        <span class="card-kicker">Transcript</span>
+        <div style="display:flex;flex-direction:column;gap:12px;max-height:520px;overflow-y:auto;padding:4px">
+          ${(at.transcript||[]).map(m=>`
+            <div class="msg-row ${m.role==='user'?'you':'them'}">
+              <div class="msg ${m.role==='user'?'you':'them'}">
+                <span class="role-tag">${m.role==='user' ? esc(sc?sc.name:'You') : esc(sc&&sc.mgrName?sc.mgrName:'Manager')}</span>${esc(m.text)}
+              </div>
+            </div>
+          `).join('') || '<p class="text-muted">No messages recorded.</p>'}
+        </div>
       </div>
-      <div class="card">
-        <h4 style="font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); margin-bottom:14px;">Concept summary</h4>
-        ${(at.summaryTags||[]).length ? at.summaryTags.map(t=>`
-          <div class="tag-note"><div class="tag-dot ${t.type||'term'}"></div><div class="tag-text">${esc(t.text)}</div></div>
-        `).join('') : '<div class="empty-note">No tags recorded.</div>'}
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="card elev-sm" style="padding:var(--space-4);gap:8px">
+          <h5 style="margin:0">The plan used</h5>
+          ${(at.plan && at.plan.sections || []).map(s=>`
+            <div style="margin-top:6px">
+              <span class="card-kicker">${esc(s.title)}</span>
+              ${(s.bullets||[]).map(b=>`<p class="text-muted" style="margin:3px 0 0;font-size:13px">&#8226; ${esc(b)}</p>`).join('')}
+            </div>
+          `).join('')}
+        </div>
+        <div class="card elev-sm" style="padding:var(--space-4);gap:8px">
+          <h5 style="margin:0">Summary</h5>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px">
+            ${(at.summaryTags||[]).map(tg=>{
+              const tt = tone(SUMMARY_TYPE_HUES[tg.type] || HUES.accent);
+              return `<span class="tag" style="background:${tt.bg};color:${tt.color}">${esc(tg.text)}</span>`;
+            }).join('') || '<span class="text-muted" style="font-size:13px">No tags recorded.</span>'}
+          </div>
+        </div>
       </div>
     </div>
-    <div class="card" style="margin-top:20px;">
-      <h4 style="font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); margin-bottom:8px;">Transcript</h4>
-      <div class="detail-transcript">
-        ${(at.transcript||[]).map(m=>`
-          <div class="msg ${m.role==='user'?'you':'them'}" style="margin-bottom:10px; max-width:90%;">
-            <span class="role-tag">${m.role==='user'?'You':esc(sc.mgrName||'Manager')}</span>${esc(m.text)}
-          </div>
-        `).join('') || '<p class="muted">No messages recorded.</p>'}
+  </div>`;
+}
+
+/* ---------------- Screen: Settings ---------------- */
+function renderSettings(){
+  return `
+  <div class="screen" style="max-width:640px">
+    <div>
+      <h1 style="font-size:26px">Settings</h1>
+      <p class="text-muted" style="margin:0;font-size:14px">Preferences are saved to this device.</p>
+    </div>
+    <div class="card elev-sm" style="padding:var(--space-6);gap:var(--space-4)">
+      <div>
+        <span class="card-kicker">Appearance</span>
+        <p class="text-muted" style="margin:4px 0 0;font-size:13px">The Rehearsal Room runs on the Nocturne interface &mdash; a dark, low-glare surface built for focused practice sessions.</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="tag tag-accent"><i class="ph-bold ph-moon-stars" style="margin-right:4px"></i>Dark</span>
+        <span class="text-muted" style="font-size:12px">No light theme is defined in this system.</span>
+      </div>
+    </div>
+    <div class="card elev-sm" style="padding:var(--space-6);gap:var(--space-4)">
+      <div>
+        <span class="card-kicker">AI counterpart</span>
+        <p class="text-muted" style="margin:4px 0 0;font-size:13px">Controls how much detail the model aims for in prep plans and live replies.</p>
+      </div>
+      <div class="seg" style="align-self:flex-start">
+        <label class="seg-opt">
+          <input type="radio" name="detail" id="opt-concise" ${RESPONSE_DETAIL==='concise'?'checked':''} />
+          <i class="ph-bold ph-text-align-left"></i><span>Concise</span>
+        </label>
+        <label class="seg-opt">
+          <input type="radio" name="detail" id="opt-detailed" ${RESPONSE_DETAIL==='detailed'?'checked':''} />
+          <i class="ph-bold ph-text-align-justify"></i><span>Detailed</span>
+        </label>
       </div>
     </div>
   </div>`;
@@ -670,7 +860,7 @@ function esc(str){
 
 /* ---------------- Screen: Auth ---------------- */
 async function signInWithGoogle(){
-  AUTH_ERROR = ''; AUTH_NOTICE = '';
+  AUTH_ERROR = '';
   AUTH_BUSY = true; render();
   const redirectTo = `${window.location.origin}${window.location.pathname}`;
   const { error } = await supabase.auth.signInWithOAuth({
@@ -683,15 +873,22 @@ async function signInWithGoogle(){
 
 function renderAuth(){
   return `
-  <div class="setup-wrap" style="max-width:420px; padding-top:40px;">
-    <span class="eyebrow">Continue with Google</span>
-    <h1 style="font-size:26px; margin-bottom:6px;">Sign in or create your account</h1>
-    <p class="muted" style="margin-bottom:22px;">Use your Google account to save your rehearsals and keep everything private to you.</p>
-    <div class="card">
-      ${AUTH_ERROR ? `<div style="color:var(--clay); font-size:13px; margin-bottom:14px;">${esc(AUTH_ERROR)}</div>` : ''}
-      ${AUTH_NOTICE ? `<div style="color:var(--teal); font-size:13px; margin-bottom:14px;">${esc(AUTH_NOTICE)}</div>` : ''}
-      <button class="btn" id="auth-google" type="button" style="width:100%; justify-content:center; gap:10px; background:#fff; color:#1f1f1f; border:1px solid #d8dce3; box-shadow:0 2px 8px rgba(0,0,0,0.08);" ${AUTH_BUSY?'disabled':''}>
-        <span style="font-size:16px; line-height:1;">G</span>
+  <div class="screen" style="max-width:420px;padding-top:64px;margin:0 auto">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="brand-mark"><i class="ph-bold ph-scales"></i></div>
+      <div class="brand-text">
+        <span class="brand-name" style="font-size:17px">The Rehearsal Room</span>
+        <span class="brand-sub">Raise negotiation practice</span>
+      </div>
+    </div>
+    <div>
+      <h1 style="font-size:24px">Sign in or create your account</h1>
+      <p class="text-muted" style="margin:0;font-size:14px">Use your Google account to save your rehearsals and keep everything private to you.</p>
+    </div>
+    <div class="card elev-sm" style="padding:var(--space-6);gap:var(--space-3)">
+      ${AUTH_ERROR ? `<div style="color:oklch(75% 0.12 18);font-size:13px">${esc(AUTH_ERROR)}</div>` : ''}
+      <button class="btn btn-block" id="auth-google" type="button" style="justify-content:center;gap:10px;background:#fff;color:#1f1f1f;border:1px solid #d8dce3" ${AUTH_BUSY?'disabled':''}>
+        <span style="font-size:16px;line-height:1">G</span>
         <span>${AUTH_BUSY ? 'Please wait…' : 'Continue with Google'}</span>
       </button>
     </div>
@@ -702,24 +899,65 @@ function attachAuthHandlers(){
   document.getElementById('auth-google').onclick = signInWithGoogle;
 }
 
+/* ---------------- Setup validation (lightweight, no full re-render) ---------------- */
+function wireSetupValidation(){
+  const nameEl = document.getElementById('f-name');
+  const titleEl = document.getElementById('f-title');
+  const goalEl = document.getElementById('f-goal');
+  const btn = document.getElementById('btn-build-plan');
+  const helper = document.getElementById('setup-helper');
+  function check(){
+    const missing = [];
+    if(!nameEl.value.trim()) missing.push('your name');
+    if(!titleEl.value.trim()) missing.push('your title');
+    if(!goalEl.value.trim()) missing.push('a goal');
+    btn.disabled = missing.length > 0;
+    if(helper){
+      helper.style.display = missing.length ? 'block' : 'none';
+      helper.textContent = 'Fill in ' + missing.join(', ') + ' to continue.';
+    }
+  }
+  [nameEl, titleEl, goalEl].forEach(el=>el.addEventListener('input', check));
+  check();
+}
+
+function wireFrameworkBadge(){
+  const sel = document.getElementById('f-framework');
+  const badge = document.getElementById('framework-badge');
+  if(!sel || !badge) return;
+  sel.addEventListener('change', ()=>{
+    const id = sel.value || 'two';
+    const t = tone(FRAMEWORK_HUES[id] ?? HUES.accent);
+    badge.style.background = t.bg; badge.style.color = t.color;
+    badge.innerHTML = '<i class="ph-bold ph-flask" style="margin-right:4px"></i>' + esc(frameworkLabel(id));
+  });
+}
+
 /* ---------------- Event wiring ---------------- */
 function attachHandlers(){
   if(VIEW==='setup'){
-    document.querySelectorAll('#concept-chips .chip').forEach(chip=>{
+    document.querySelectorAll('#concept-chips .chip-toggle').forEach(chip=>{
       const c = chip.getAttribute('data-concept');
-      if(draft && draft.concepts && draft.concepts.includes(c)) chip.classList.add('selected');
       chip.onclick = ()=>{
         if(!draft) draft = { concepts: [] };
         if(!draft.concepts) draft.concepts = [];
         const idx = draft.concepts.indexOf(c);
+        const nowActive = idx === -1;
         if(idx>-1) draft.concepts.splice(idx,1); else draft.concepts.push(c);
-        chip.classList.toggle('selected');
+        if(nowActive){
+          const t = tone(CONCEPT_HUES[c]);
+          chip.style.background = t.bg; chip.style.color = t.color; chip.style.borderColor = 'transparent';
+        } else {
+          chip.style.background = 'transparent'; chip.style.color = 'color-mix(in srgb, var(--color-text) 65%, transparent)'; chip.style.borderColor = 'var(--color-divider)';
+        }
       };
     });
     document.getElementById('btn-build-plan').onclick = onBuildPlan;
+    wireSetupValidation();
+    wireFrameworkBadge();
   }
   if(VIEW==='plan'){
-    document.querySelectorAll('.plan-section li[contenteditable]').forEach(li=>{
+    document.querySelectorAll('.plan-bullet li[contenteditable]').forEach(li=>{
       li.addEventListener('blur', ()=>{
         const si = +li.getAttribute('data-si'), bi = +li.getAttribute('data-bi');
         draft.plan.sections[si].bullets[bi] = li.textContent;
@@ -729,6 +967,8 @@ function attachHandlers(){
     if(backBtn) backBtn.onclick = ()=>{ VIEW='setup'; render(); };
     const startBtn = document.getElementById('btn-start-negotiation');
     if(startBtn) startBtn.onclick = onStartNegotiation;
+    const regenBtn = document.getElementById('btn-regenerate');
+    if(regenBtn) regenBtn.onclick = onRegeneratePlan;
   }
   if(VIEW==='live'){
     const scroll = document.getElementById('chat-scroll');
@@ -742,46 +982,100 @@ function attachHandlers(){
         if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); onSendMessage(); }
       });
     }
+    const opener = document.getElementById('btn-use-opener');
+    if(opener) opener.onclick = ()=>{
+      const el = document.getElementById('chat-input');
+      if(el){ el.value = `Hi ${draft.prefill.mgrName || 'there'}, do you have a few minutes to talk through my role and compensation?`; el.focus(); }
+    };
     const toggle = document.getElementById('toggle-plan');
     if(toggle) toggle.onclick = ()=>{ draft.planCollapsed = !draft.planCollapsed; render(); };
+    const pauseBtn = document.getElementById('btn-pause');
+    if(pauseBtn) pauseBtn.onclick = pauseAndExit;
+    const closeBtn = document.getElementById('btn-close-agreement');
+    if(closeBtn) closeBtn.onclick = closeWithAgreement;
     const leaveBtn = document.getElementById('btn-leave');
-    if(leaveBtn) leaveBtn.onclick = onLeaveNegotiation;
+    if(leaveBtn) leaveBtn.onclick = ()=>{ showLeaveDialog = true; render(); };
+    const cancelBtn = document.getElementById('btn-leave-cancel');
+    if(cancelBtn) cancelBtn.onclick = ()=>{ showLeaveDialog = false; render(); };
+    const discardBtn = document.getElementById('btn-leave-discard');
+    if(discardBtn) discardBtn.onclick = onDiscardAttempt;
+    const saveBtn = document.getElementById('btn-leave-save');
+    if(saveBtn) saveBtn.onclick = onSaveAndExit;
   }
-  if(VIEW==='home' || VIEW==='history'){
+  if(VIEW==='home'){
     const newBtn = document.getElementById('btn-new-scenario');
-    if(newBtn) newBtn.onclick = ()=>{ draft = null; VIEW='setup'; render(); };
-    document.querySelectorAll('.attempt-row').forEach(row=>{
-      row.addEventListener('click', (e)=>{
-        if(e.target.classList.contains('btn-try-different')) return;
-        historyDetail = row.getAttribute('data-attempt');
-        detailOrigin = VIEW;
-        VIEW = 'detail'; render();
+    if(newBtn) newBtn.onclick = startNewScenario;
+    const firstBtn = document.getElementById('btn-first-scenario');
+    if(firstBtn) firstBtn.onclick = startNewScenario;
+    document.querySelectorAll('.attempt-card').forEach(card=>{
+      card.addEventListener('click', (e)=>{
+        if(e.target.closest('.btn-try-different') || e.target.closest('.btn-resume')) return;
+        const id = card.getAttribute('data-attempt');
+        const at = DATA.attempts.find(a=>a.id===id);
+        if(!at) return;
+        if(at.status==='in-progress') resumeAttempt(at);
+        else { historyDetail = id; VIEW = 'detail'; render(); }
+      });
+    });
+    document.querySelectorAll('.btn-resume').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const at = DATA.attempts.find(a=>a.id===btn.getAttribute('data-attempt'));
+        if(at) resumeAttempt(at);
       });
     });
     document.querySelectorAll('.btn-try-different').forEach(btn=>{
       btn.addEventListener('click', (e)=>{
         e.stopPropagation();
-        const scId = btn.getAttribute('data-scenario');
-        const sc = DATA.scenarios.find(s=>s.id===scId);
-        draft = { prefill: { name: sc.name, title: sc.title, goal: sc.goal, mgrName: sc.mgrName, mgrDisp: sc.mgrDisp }, concepts: [] , existingScenarioId: sc.id};
-        VIEW='setup'; render();
+        reuseScenario(btn.getAttribute('data-scenario'));
       });
     });
   }
   if(VIEW==='detail'){
-    document.getElementById('btn-back-history').onclick = ()=>{ VIEW=detailOrigin; render(); };
+    document.getElementById('btn-back-home').onclick = goHome;
+    const tryBtn = document.getElementById('btn-try-different-detail');
+    if(tryBtn) tryBtn.onclick = ()=> reuseScenario(tryBtn.getAttribute('data-scenario'));
+  }
+  if(VIEW==='settings'){
+    const concise = document.getElementById('opt-concise');
+    const detailed = document.getElementById('opt-detailed');
+    if(concise) concise.onchange = ()=> setResponseDetail('concise');
+    if(detailed) detailed.onchange = ()=> setResponseDetail('detailed');
   }
 }
 
 /* ---------------- Actions ---------------- */
+function reuseScenario(scId){
+  const sc = DATA.scenarios.find(s=>s.id===scId);
+  if(!sc) return;
+  draft = { prefill: { name: sc.name, title: sc.title, goal: sc.goal, mgrName: sc.mgrName, mgrDisp: sc.mgrDisp }, concepts: [], existingScenarioId: sc.id };
+  VIEW = 'setup';
+  render();
+}
+
+function resumeAttempt(at){
+  const sc = DATA.scenarios.find(s=>s.id===at.scenarioId);
+  if(!sc) return;
+  draft = {
+    prefill: { name: sc.name, title: sc.title, goal: sc.goal, mgrName: sc.mgrName, mgrDisp: sc.mgrDisp },
+    framework: at.framework, concepts: at.concepts || [],
+    existingScenarioId: sc.id, scenarioId: sc.id, attemptId: at.id,
+    plan: at.plan, transcript: at.transcript || [], summaryTags: at.summaryTags || [],
+    outcome: at.outcome || null, createdAt: at.createdAt, planCollapsed: false,
+  };
+  VIEW = 'live';
+  render();
+}
+
 async function onBuildPlan(){
-  const name = document.getElementById('f-name').value.trim() || 'You';
-  const title = document.getElementById('f-title').value.trim() || 'Your role';
-  const goal = document.getElementById('f-goal').value.trim() || 'Asking for a raise';
+  const name = document.getElementById('f-name').value.trim();
+  const title = document.getElementById('f-title').value.trim();
+  const goal = document.getElementById('f-goal').value.trim();
   const mgrName = document.getElementById('f-mgr-name').value.trim();
   const mgrDisp = document.getElementById('f-mgr-disp').value.trim();
   const framework = document.getElementById('f-framework').value || 'two';
   const concepts = (draft && draft.concepts) ? draft.concepts : [];
+  if(!name || !title || !goal) return;
 
   const prefill = { name, title, goal, mgrName, mgrDisp };
   const existingScenarioId = draft ? draft.existingScenarioId : null;
@@ -792,6 +1086,14 @@ async function onBuildPlan(){
   render();
 
   const plan = await generatePlan(prefill, framework, concepts);
+  draft.plan = plan;
+  planLoading = false;
+  render();
+}
+
+async function onRegeneratePlan(){
+  planLoading = true; render();
+  const plan = await generatePlan(draft.prefill, draft.framework, draft.concepts);
   draft.plan = plan;
   planLoading = false;
   render();
@@ -808,7 +1110,10 @@ function sectionSpecForFramework(framework){
 }
 
 async function generatePlan(prefill, framework, concepts){
-  const system = `You are a sharp negotiation coach helping someone prep for a real conversation asking their manager for a raise. Output ONLY valid JSON, no preamble, no markdown fences. Format exactly: {"sections":[{"title":"...","bullets":["...","..."]}]}. Bullets must be short, concrete, scannable phrases (max ~18 words each) — a cheat sheet, not prose. Tailor everything to the specifics given.`;
+  const lengthNote = RESPONSE_DETAIL === 'detailed'
+    ? ' A few more bullets and a touch more nuance are welcome where useful.'
+    : ' Keep it as tight as possible — the fewest words that still land.';
+  const system = `You are a sharp negotiation coach helping someone prep for a real conversation asking their manager for a raise. Output ONLY valid JSON, no preamble, no markdown fences. Format exactly: {"sections":[{"title":"...","bullets":["...","..."]}]}. Bullets must be short, concrete, scannable phrases (max ~18 words each) — a cheat sheet, not prose. Tailor everything to the specifics given.${lengthNote}`;
   const userMsg = `Person: ${prefill.name}, ${prefill.title}.
 Goal of the raise ask: ${prefill.goal}
 Counterpart: ${prefill.mgrName || 'unspecified manager'}, disposition: ${prefill.mgrDisp || 'unspecified'}
@@ -881,9 +1186,12 @@ async function onSendMessage(){
 
   const mgrName = draft.prefill.mgrName || 'the manager';
   const mgrDisp = draft.prefill.mgrDisp || 'no particular disposition specified — play it realistically neutral';
+  const lengthNote = RESPONSE_DETAIL === 'detailed'
+    ? ' Replies can run a bit longer, 4-7 sentences, with more nuance and detail.'
+    : ' Keep replies tight, 2-3 sentences.';
   const system = `You are roleplaying as ${mgrName}, the manager in a salary raise negotiation with ${draft.prefill.name}, who holds the title "${draft.prefill.title}". Manager disposition: ${mgrDisp}. The employee's stated goal: ${draft.prefill.goal}.
 Stay fully in character as the manager only — never break character, never give coaching advice, never speak as narrator.
-Negotiate realistically: do not fold easily. Push back at least sometimes, ask clarifying questions, counter-anchor, stall, or raise real constraints (budget cycles, precedent, needing to check with others) when appropriate to the disposition. Keep replies to 2-5 sentences, natural spoken dialogue, no stage directions, no markdown.`;
+Negotiate realistically: do not fold easily. Push back at least sometimes, ask clarifying questions, counter-anchor, stall, or raise real constraints (budget cycles, precedent, needing to check with others) when appropriate to the disposition. Natural spoken dialogue, no stage directions, no markdown.${lengthNote}`;
 
   const apiMessages = draft.transcript.map(m=>({ role: m.role==='user'?'user':'assistant', content: m.text }));
   const reply = await askAI(system, apiMessages, false);
@@ -907,26 +1215,52 @@ async function updateLiveSummary(){
   saveAttemptSnapshot();
 }
 
-async function onLeaveNegotiation(){
-  const wantsSave = confirm('Save this attempt before leaving?');
-  if(wantsSave){
-    if(draft.transcript.length>0){
-      const system = `Summarize the outcome of this salary negotiation roleplay in one short punchy tag, 3-6 words, e.g. "Held anchor", "Conceded early", "Manager agreed to review in Q1". Output ONLY valid JSON: {"outcome":"..."}`;
-      const transcriptText = draft.transcript.map(m=> (m.role==='user'?'Employee: ':'Manager: ') + m.text).join('\n');
-      const result = await askAI(system, [{role:'user', content: transcriptText}], true);
-      draft.outcome = (result && result.outcome) ? result.outcome : 'Attempt recorded';
-    } else {
-      draft.outcome = 'Ended early';
-    }
-    await saveAttemptSnapshot('completed');
+async function pauseAndExit(){
+  if(!draft.transcript || draft.transcript.length===0){
+    await deleteAttemptRecord(draft.attemptId);
   }
   draft = null;
-  VIEW = 'history';
+  showLeaveDialog = false;
+  VIEW = 'home';
+  render();
+}
+
+async function closeWithAgreement(){
+  draft.outcome = 'Manager agreed';
+  await saveAttemptSnapshot('completed');
+  draft = null;
+  showLeaveDialog = false;
+  VIEW = 'home';
+  render();
+}
+
+async function onDiscardAttempt(){
+  await deleteAttemptRecord(draft.attemptId);
+  draft = null;
+  showLeaveDialog = false;
+  VIEW = 'home';
+  render();
+}
+
+async function onSaveAndExit(){
+  if(draft.transcript.length>0){
+    const system = `Summarize the outcome of this salary negotiation roleplay in one short punchy tag, 3-6 words, e.g. "Held anchor", "Conceded early", "Manager agreed to review in Q1". Output ONLY valid JSON: {"outcome":"..."}`;
+    const transcriptText = draft.transcript.map(m=> (m.role==='user'?'Employee: ':'Manager: ') + m.text).join('\n');
+    const result = await askAI(system, [{role:'user', content: transcriptText}], true);
+    draft.outcome = (result && result.outcome) ? result.outcome : 'Attempt recorded';
+  } else {
+    draft.outcome = 'Ended early';
+  }
+  await saveAttemptSnapshot('completed');
+  draft = null;
+  showLeaveDialog = false;
+  VIEW = 'home';
   render();
 }
 
 /* ---------------- Boot ---------------- */
 (async function init(){
+  loadResponseDetail();
   await initAuth();
   if(SESSION){ await loadData(); }
   render();
