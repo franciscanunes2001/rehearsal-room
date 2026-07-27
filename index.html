@@ -1189,9 +1189,13 @@ async function onSendMessage(){
   const lengthNote = RESPONSE_DETAIL === 'detailed'
     ? ' Replies can run a bit longer, 4-7 sentences, with more nuance and detail.'
     : ' Keep replies tight, 2-3 sentences.';
+  const turnCount = draft.transcript.filter(m=>m.role==='user').length;
+  const progressNote = turnCount >= 5
+    ? ' The conversation has gone on for a while now — if the employee has given any legitimate justification across the conversation, this is a natural point to make a real concession, agree to concrete terms, or land on a clear next step rather than repeating an earlier objection.'
+    : '';
   const system = `You are roleplaying as ${mgrName}, the manager in a salary raise negotiation with ${draft.prefill.name}, who holds the title "${draft.prefill.title}". Manager disposition: ${mgrDisp}. The employee's stated goal: ${draft.prefill.goal}.
 Stay fully in character as the manager only — never break character, never give coaching advice, never speak as narrator.
-Negotiate realistically: do not fold easily. Push back at least sometimes, ask clarifying questions, counter-anchor, stall, or raise real constraints (budget cycles, precedent, needing to check with others) when appropriate to the disposition. Natural spoken dialogue, no stage directions, no markdown.${lengthNote}`;
+Negotiate realistically, like a real person who wants a good outcome — not an obstacle designed to never yield. Open reasonably firm and probe with genuine questions or real constraints (budget cycles, precedent, needing to check with others), consistent with the disposition. But actually listen: when the employee gives strong, specific reasoning — data, market comparisons, concrete scope or impact — take it seriously and move, whether that's a partial concession, agreeing to specific terms, or committing to a clear next step. Don't repeat the same objection turn after turn without new movement, and don't stall indefinitely just to seem tough. It is completely fine, and often the right call, to agree to the ask (in full or in part) once the case for it is genuinely strong. Natural spoken dialogue, no stage directions, no markdown.${lengthNote}${progressNote}`;
 
   const apiMessages = draft.transcript.map(m=>({ role: m.role==='user'?'user':'assistant', content: m.text }));
   const reply = await askAI(system, apiMessages, false);
