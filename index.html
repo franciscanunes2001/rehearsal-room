@@ -1168,13 +1168,39 @@ async function onRegeneratePlan(){
   render();
 }
 
-function sectionSpecForFramework(framework){
+// Each entry describes one section as a flat instruction line — these get merged
+// with the universal Context/Target/BATNA lines into a single ordered list, so the
+// model only ever sees one "produce exactly N sections" instruction, never two
+// competing ones.
+function frameworkSectionLines(framework){
   switch(framework){
-    case 'seven': return `Seven Elements framework. Produce exactly these 7 sections in this order, each with exactly 1 bullet tailored to the person's goal and counterpart context: "Interests", "Legitimacy", "Relationships", "Alternatives (BATNA)", "Options", "Commitments", "Communication".`;
-    case 'core': return `Core Concerns framework. Produce exactly these 5 sections, each with exactly 1 bullet giving a concrete phrase or move for this ask: "Appreciation", "Affiliation", "Autonomy", "Status", "Role".`;
-    case 'anchor': return `Anchor & Legitimacy framework. Produce exactly 2 sections: "Opening anchor" (1 bullet with a suggested number or range), and "Legitimacy points" (2-3 bullets: market comps, scope, timing — each credible and specific).`;
-    case 'multi': return `Multi-issue expansion framework. Produce exactly 1 section titled "Variables in play" with 4-5 bullets, each naming a variable beyond price (timing, scope, title, review cycle, remote/flex terms, etc.) with a one-line note.`;
-    default: return `2 Elements Framework. Produce exactly 2 sections: "Interests" (2-3 bullets on the real why behind the ask, not just the number) and "BATNA" (2-3 bullets on the walk-away alternative and how to protect it — never reveal it, never reveal time pressure).`;
+    case 'seven': return [
+      '"Interests" — exactly 1 bullet tailored to the person\'s goal and counterpart context',
+      '"Legitimacy" — exactly 1 bullet',
+      '"Relationships" — exactly 1 bullet',
+      '"Alternatives (BATNA)" — exactly 1 bullet',
+      '"Options" — exactly 1 bullet',
+      '"Commitments" — exactly 1 bullet',
+      '"Communication" — exactly 1 bullet',
+    ];
+    case 'core': return [
+      '"Appreciation" — exactly 1 bullet giving a concrete phrase or move for this ask',
+      '"Affiliation" — exactly 1 bullet',
+      '"Autonomy" — exactly 1 bullet',
+      '"Status" — exactly 1 bullet',
+      '"Role" — exactly 1 bullet',
+    ];
+    case 'anchor': return [
+      '"Opening anchor" — exactly 1 bullet with a suggested number or range',
+      '"Legitimacy points" — 2-3 bullets: market comps, scope, timing — each credible and specific',
+    ];
+    case 'multi': return [
+      '"Variables in play" — 4-5 bullets, each naming a variable beyond price (timing, scope, title, review cycle, remote/flex terms, etc.) with a one-line note',
+    ];
+    default: return [
+      '"Interests" — 2-3 bullets on the real why behind the ask, not just the number',
+      '"BATNA" — 2-3 bullets on the walk-away alternative and how to protect it — never reveal it, never reveal time pressure',
+    ];
   }
 }
 
@@ -1189,8 +1215,16 @@ async function generatePlan(prefill, framework, concepts){
     ? ' A few more bullets and a touch more nuance are welcome where useful.'
     : ' Keep it as tight as possible — the fewest words that still land.';
   const system = `You are a sharp negotiation coach helping someone prep for a real conversation asking their manager for a raise. Output ONLY valid JSON, no preamble, no markdown fences. Format exactly: {"sections":[{"title":"...","bullets":["...","..."]}]}. Bullets must be short, concrete, scannable phrases (max ~18 words each) — a cheat sheet, not prose. Tailor everything to the specifics given, including company size/culture and experience level where provided. Never write generic filler like "know your BATNA" or "have a number in mind" — every Target and BATNA bullet must state or clearly imply an actual figure, range, or specific alternative grounded in the context given, inventing a plausible concrete one if the input doesn't supply it.${lengthNote}`;
-  const batnaAppendix = frameworkHasOwnBatna(framework) ? '' : `
-4. Finally, add a "BATNA" section with exactly 2 bullets: a specific, plausible walk-away alternative (a real competing offer, an internal move, or a concrete market alternative — not just "other options exist"), and how to protect it without revealing it or any time pressure during the conversation.`;
+
+  const sectionLines = [
+    '"Context" — exactly 1 bullet that plainly restates the situation in one read: who\'s asking, at roughly what kind of company, with what experience, for what',
+    '"Target" — exactly 2 bullets: a concrete opening number or range to ask for (a real figure derived from the goal, not vague), and the walk-away floor — the minimum outcome that still counts as a win',
+    ...frameworkSectionLines(framework),
+  ];
+  if(!frameworkHasOwnBatna(framework)){
+    sectionLines.push('"BATNA" — exactly 2 bullets: a specific, plausible walk-away alternative (a real competing offer, an internal move, or a concrete market alternative — not just "other options exist"), and how to protect it without revealing it or any time pressure during the conversation');
+  }
+
   const userMsg = `Person: ${prefill.name}, ${prefill.title}.
 Goal of the raise ask: ${prefill.goal}
 Counterpart: ${prefill.mgrName || 'unspecified manager'}, disposition: ${prefill.mgrDisp || 'unspecified'}
@@ -1199,10 +1233,8 @@ ${prefill.yearsExperience ? 'Employee experience level: ' + yearsExperienceLabel
 ${prefill.companyCulture ? 'Company culture: ' + companyCultureLabel(prefill.companyCulture) : ''}
 ${concepts.length ? 'Concepts to stress-test in the bullets where relevant: ' + concepts.join(', ') : ''}
 
-Produce these sections, in this exact order:
-1. "Context" — exactly 1 bullet that plainly restates the situation in one read: who's asking, at roughly what kind of company, with what experience, for what.
-2. "Target" — exactly 2 bullets: a concrete opening number or range to ask for (a real figure derived from the goal, not vague), and the walk-away floor — the minimum outcome that still counts as a win.
-3. Then: ${sectionSpecForFramework(framework)}${batnaAppendix}
+Produce exactly these ${sectionLines.length} sections, in this exact order:
+${sectionLines.map((line, i) => `${i + 1}. ${line}.`).join('\n')}
 
 Return only the JSON object.`;
   const result = await askAI(system, [{role:'user', content:userMsg}], true);
