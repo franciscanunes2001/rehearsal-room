@@ -31,11 +31,15 @@ alter table scenarios enable row level security;
 alter table attempts enable row level security;
 
 -- Each person can only ever see/insert/update/delete their own rows.
+-- Dropped first so this whole file stays safe to re-run (create policy has
+-- no "if not exists" form).
+drop policy if exists "Users manage own scenarios" on scenarios;
 create policy "Users manage own scenarios" on scenarios
   for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users manage own attempts" on attempts;
 create policy "Users manage own attempts" on attempts
   for all
   using (auth.uid() = user_id)

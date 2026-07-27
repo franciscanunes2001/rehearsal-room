@@ -1178,11 +1178,19 @@ function sectionSpecForFramework(framework){
   }
 }
 
+// 'seven' and 'two'/default already produce their own BATNA/Alternatives section —
+// the rest need one appended so every plan ends with a concrete walk-away.
+function frameworkHasOwnBatna(framework){
+  return framework === 'seven' || framework === 'two' || !framework;
+}
+
 async function generatePlan(prefill, framework, concepts){
   const lengthNote = RESPONSE_DETAIL === 'detailed'
     ? ' A few more bullets and a touch more nuance are welcome where useful.'
     : ' Keep it as tight as possible — the fewest words that still land.';
-  const system = `You are a sharp negotiation coach helping someone prep for a real conversation asking their manager for a raise. Output ONLY valid JSON, no preamble, no markdown fences. Format exactly: {"sections":[{"title":"...","bullets":["...","..."]}]}. Bullets must be short, concrete, scannable phrases (max ~18 words each) — a cheat sheet, not prose. Tailor everything to the specifics given.${lengthNote}`;
+  const system = `You are a sharp negotiation coach helping someone prep for a real conversation asking their manager for a raise. Output ONLY valid JSON, no preamble, no markdown fences. Format exactly: {"sections":[{"title":"...","bullets":["...","..."]}]}. Bullets must be short, concrete, scannable phrases (max ~18 words each) — a cheat sheet, not prose. Tailor everything to the specifics given, including company size/culture and experience level where provided. Never write generic filler like "know your BATNA" or "have a number in mind" — every Target and BATNA bullet must state or clearly imply an actual figure, range, or specific alternative grounded in the context given, inventing a plausible concrete one if the input doesn't supply it.${lengthNote}`;
+  const batnaAppendix = frameworkHasOwnBatna(framework) ? '' : `
+4. Finally, add a "BATNA" section with exactly 2 bullets: a specific, plausible walk-away alternative (a real competing offer, an internal move, or a concrete market alternative — not just "other options exist"), and how to protect it without revealing it or any time pressure during the conversation.`;
   const userMsg = `Person: ${prefill.name}, ${prefill.title}.
 Goal of the raise ask: ${prefill.goal}
 Counterpart: ${prefill.mgrName || 'unspecified manager'}, disposition: ${prefill.mgrDisp || 'unspecified'}
@@ -1191,12 +1199,22 @@ ${prefill.yearsExperience ? 'Employee experience level: ' + yearsExperienceLabel
 ${prefill.companyCulture ? 'Company culture: ' + companyCultureLabel(prefill.companyCulture) : ''}
 ${concepts.length ? 'Concepts to stress-test in the bullets where relevant: ' + concepts.join(', ') : ''}
 
-${sectionSpecForFramework(framework)}
+Produce these sections, in this exact order:
+1. "Context" — exactly 1 bullet that plainly restates the situation in one read: who's asking, at roughly what kind of company, with what experience, for what.
+2. "Target" — exactly 2 bullets: a concrete opening number or range to ask for (a real figure derived from the goal, not vague), and the walk-away floor — the minimum outcome that still counts as a win.
+3. Then: ${sectionSpecForFramework(framework)}${batnaAppendix}
 
 Return only the JSON object.`;
   const result = await askAI(system, [{role:'user', content:userMsg}], true);
   if(result && result.sections) return result;
-  return { sections: [{ title:'Interests', bullets:['Clarify what outcome matters most beyond the number.'] }, { title:'BATNA', bullets:['Know your walk-away alternative before you sit down.'] }] };
+  return {
+    sections: [
+      { title:'Context', bullets:[`${prefill.name || 'You'} (${prefill.title || 'your role'}) preparing to ask: ${(prefill.goal || 'a raise').replace(/\.+\s*$/, '')}.`] },
+      { title:'Target', bullets:['Decide a concrete opening number or range before the conversation — not just "more".', 'Set a walk-away floor: the minimum outcome you would still accept.'] },
+      { title:'Interests', bullets:['Clarify what outcome matters most beyond the number.'] },
+      { title:'BATNA', bullets:['Identify one specific, real alternative (another offer, internal move, or market option) — not just "I could leave".', 'Never reveal this alternative or any timeline during the conversation.'] },
+    ]
+  };
 }
 
 async function onStartNegotiation(){
