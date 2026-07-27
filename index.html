@@ -506,8 +506,7 @@ function renderStepper(activeIndex){
 /* ---------------- Screen: Setup ---------------- */
 function renderSetup(){
   const p = draft && draft.prefill ? draft.prefill : {};
-  const fw = (draft && draft.framework) || '';
-  const fwTone = tone(FRAMEWORK_HUES[fw] ?? HUES.accent);
+  const fwTone = tone(FRAMEWORK_HUES.seven);
   const concepts = (draft && draft.concepts) || [];
   return `
   <div class="screen" style="max-width:680px">
@@ -576,14 +575,11 @@ function renderSetup(){
           </div>
         </div>
         <div class="field" style="margin-bottom:0">
-          <label>Framework to test</label>
-          <select class="input" id="f-framework">
-            <option value="">Not selected &mdash; defaults to 2 Elements Framework</option>
-            ${FRAMEWORKS.filter(f=>f.id!=='two').map(f=>`<option value="${f.id}" ${fw===f.id?'selected':''}>${esc(f.label)}</option>`).join('')}
-          </select>
-          <div style="margin-top:8px">
-            <span class="tag" id="framework-badge" style="background:${fwTone.bg};color:${fwTone.color}"><i class="ph-bold ph-flask" style="margin-right:4px"></i>${esc(frameworkLabel(fw))}</span>
+          <label>Framework</label>
+          <div>
+            <span class="tag" style="background:${fwTone.bg};color:${fwTone.color}"><i class="ph-bold ph-flask" style="margin-right:4px"></i>${esc(frameworkLabel('seven'))}</span>
           </div>
+          <span class="text-muted" style="font-size:12px">Every plan is built around the Seven Elements of negotiation — Interests, Legitimacy, Relationships, Alternatives (BATNA), Options, Commitments, Communication.</span>
         </div>
         <div class="field" style="margin-bottom:0">
           <label>Concepts to stress-test</label>
@@ -976,18 +972,6 @@ function wireSetupValidation(){
   check();
 }
 
-function wireFrameworkBadge(){
-  const sel = document.getElementById('f-framework');
-  const badge = document.getElementById('framework-badge');
-  if(!sel || !badge) return;
-  sel.addEventListener('change', ()=>{
-    const id = sel.value || 'two';
-    const t = tone(FRAMEWORK_HUES[id] ?? HUES.accent);
-    badge.style.background = t.bg; badge.style.color = t.color;
-    badge.innerHTML = '<i class="ph-bold ph-flask" style="margin-right:4px"></i>' + esc(frameworkLabel(id));
-  });
-}
-
 /* ---------------- Event wiring ---------------- */
 function attachHandlers(){
   if(VIEW==='setup'){
@@ -1009,7 +993,6 @@ function attachHandlers(){
     });
     document.getElementById('btn-build-plan').onclick = onBuildPlan;
     wireSetupValidation();
-    wireFrameworkBadge();
     const randomizeBtn = document.getElementById('btn-randomize-context');
     if(randomizeBtn) randomizeBtn.onclick = ()=>{
       const pick = (options, elId)=>{
@@ -1142,7 +1125,7 @@ async function onBuildPlan(){
   const companySize = document.getElementById('f-company-size').value;
   const yearsExperience = document.getElementById('f-years-exp').value;
   const companyCulture = document.getElementById('f-company-culture').value;
-  const framework = document.getElementById('f-framework').value || 'two';
+  const framework = 'seven';
   const concepts = (draft && draft.concepts) ? draft.concepts : [];
   if(!name || !title || !goal) return;
 
@@ -1175,13 +1158,13 @@ async function onRegeneratePlan(){
 function frameworkSectionLines(framework){
   switch(framework){
     case 'seven': return [
-      '"Interests" — exactly 1 bullet tailored to the person\'s goal and counterpart context',
-      '"Legitimacy" — exactly 1 bullet',
-      '"Relationships" — exactly 1 bullet',
-      '"Alternatives (BATNA)" — exactly 1 bullet',
-      '"Options" — exactly 1 bullet',
-      '"Commitments" — exactly 1 bullet',
-      '"Communication" — exactly 1 bullet',
+      '"Interests" — 2-3 bullets on the real underlying needs behind the ask (recognition, growth, fairness, workload — not just the number), specific to this person\'s situation',
+      '"Legitimacy" — 2-3 bullets on external reference points that make the ask credible: market data, scope comparisons, tenure, measurable impact, or company norms',
+      '"Relationships" — 2-3 bullets on how to frame this as a shared problem with the manager and protect the working relationship regardless of the outcome',
+      '"Alternatives (BATNA)" — 2-3 bullets: a specific, plausible walk-away alternative and how to protect it without revealing it or any time pressure during the conversation',
+      '"Options" — 2-3 bullets on concrete ways to create value beyond base pay (title, scope, timing, benefits, flexibility) that could be traded',
+      '"Commitments" — 2-3 bullets on what a good outcome should commit both sides to, including a concrete next step and date',
+      '"Communication" — 2-3 bullets on how to structure the conversation itself (what to ask before asserting, how to read the room, how to adapt to this manager\'s specific disposition)',
     ];
     case 'core': return [
       '"Appreciation" — exactly 1 bullet giving a concrete phrase or move for this ask',
@@ -1243,8 +1226,13 @@ Return only the JSON object.`;
     sections: [
       { title:'Context', bullets:[`${prefill.name || 'You'} (${prefill.title || 'your role'}) preparing to ask: ${(prefill.goal || 'a raise').replace(/\.+\s*$/, '')}.`] },
       { title:'Target', bullets:['Decide a concrete opening number or range before the conversation — not just "more".', 'Set a walk-away floor: the minimum outcome you would still accept.'] },
-      { title:'Interests', bullets:['Clarify what outcome matters most beyond the number.'] },
-      { title:'BATNA', bullets:['Identify one specific, real alternative (another offer, internal move, or market option) — not just "I could leave".', 'Never reveal this alternative or any timeline during the conversation.'] },
+      { title:'Interests', bullets:['Clarify what outcome matters most beyond the number — recognition, growth, fairness, or workload relief.'] },
+      { title:'Legitimacy', bullets:['Bring an external reference point — market data, a scope comparison, or measurable impact.'] },
+      { title:'Relationships', bullets:['Frame this as solving a shared problem with your manager, not a demand against them.'] },
+      { title:'Alternatives (BATNA)', bullets:['Identify one specific, real alternative (another offer, internal move, or market option) — not just "I could leave".', 'Never reveal this alternative or any timeline during the conversation.'] },
+      { title:'Options', bullets:['Have 2-3 ways to get value beyond base pay ready to float — title, scope, timing, or flexibility.'] },
+      { title:'Commitments', bullets:['Ask for a specific next step and date before the conversation ends.'] },
+      { title:'Communication', bullets:['Ask more than you assert early on, to surface their real constraints first.'] },
     ]
   };
 }
