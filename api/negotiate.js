@@ -34,7 +34,7 @@ export default async function handler(req, res) {
   const body = {
     contents,
     ...(system ? { system_instruction: { parts: [{ text: system }] } } : {}),
-    generationConfig: { maxOutputTokens: 1000 }
+    generationConfig: { maxOutputTokens: 2200 }
   };
 
   try {
