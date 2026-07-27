@@ -277,7 +277,8 @@ async function loadData(){
     if(e2) console.error(e2);
     DATA.scenarios = (scenarios||[]).map(s=>({
       id: s.id, name: s.name, title: s.title, goal: s.goal,
-      mgrName: s.mgr_name, mgrDisp: s.mgr_disp, groupKey: s.group_key
+      mgrName: s.mgr_name, mgrDisp: s.mgr_disp, groupKey: s.group_key,
+      companySize: s.company_size, yearsExperience: s.years_experience, companyCulture: s.company_culture
     }));
     DATA.attempts = (attempts||[]).map(a=>({
       id: a.id, scenarioId: a.scenario_id, framework: a.framework, concepts: a.concepts,
@@ -290,10 +291,14 @@ async function loadData(){
 async function createScenario(prefill, groupKey){
   const { data, error } = await supabase.from('scenarios').insert({
     user_id: SESSION.user.id, name: prefill.name, title: prefill.title, goal: prefill.goal,
-    mgr_name: prefill.mgrName || null, mgr_disp: prefill.mgrDisp || null, group_key: groupKey
+    mgr_name: prefill.mgrName || null, mgr_disp: prefill.mgrDisp || null, group_key: groupKey,
+    company_size: prefill.companySize || null, years_experience: prefill.yearsExperience || null, company_culture: prefill.companyCulture || null
   }).select().single();
   if(error){ console.error(error); return null; }
-  const sc = { id:data.id, name:data.name, title:data.title, goal:data.goal, mgrName:data.mgr_name, mgrDisp:data.mgr_disp, groupKey:data.group_key };
+  const sc = {
+    id:data.id, name:data.name, title:data.title, goal:data.goal, mgrName:data.mgr_name, mgrDisp:data.mgr_disp, groupKey:data.group_key,
+    companySize:data.company_size, yearsExperience:data.years_experience, companyCulture:data.company_culture
+  };
   DATA.scenarios.push(sc);
   return sc;
 }
@@ -370,10 +375,34 @@ const FRAMEWORKS = [
 const CONCEPTS = ['Anchoring high','Conceding too fast','Single-issue price lock','Revealing urgency'];
 const STEP_LABELS = ['Set the scene', 'Prep plan', 'Practice'];
 
+const COMPANY_SIZES = [
+  { id: '1-10', label: '1–10 people — early-stage startup' },
+  { id: '11-50', label: '11–50 people — startup' },
+  { id: '51-500', label: '51–500 people — mid-size / scale-up' },
+  { id: '501-5000', label: '501–5,000 people — large company' },
+  { id: '5000+', label: '5,000+ people — enterprise' },
+];
+const YEARS_EXPERIENCE = [
+  { id: '0-2', label: '0–2 years — early career' },
+  { id: '3-5', label: '3–5 years — mid-level' },
+  { id: '6-10', label: '6–10 years — senior' },
+  { id: '10+', label: '10+ years — veteran' },
+];
+const COMPANY_CULTURES = [
+  { id: 'startup', label: 'Startup — fast-moving, resource-constrained' },
+  { id: 'scaleup', label: 'Scale-up — growing fast, process still forming' },
+  { id: 'corporate', label: 'Corporate / enterprise — structured, slower approvals' },
+  { id: 'nonprofit', label: 'Non-profit / mission-driven — budget-constrained, values-driven' },
+  { id: 'public', label: 'Public sector / government — rigid process, strict budgets' },
+];
+
 function frameworkLabel(id){
   const f = FRAMEWORKS.find(f=>f.id===id);
   return f ? f.label : '2 Elements (Interests + BATNA)';
 }
+function companySizeLabel(id){ const o = COMPANY_SIZES.find(o=>o.id===id); return o ? o.label : ''; }
+function yearsExperienceLabel(id){ const o = YEARS_EXPERIENCE.find(o=>o.id===id); return o ? o.label : ''; }
+function companyCultureLabel(id){ const o = COMPANY_CULTURES.find(o=>o.id===id); return o ? o.label : ''; }
 
 // Harmonious hues sharing the accent's tonal weight (L≈30%/92%, C≈0.075/0.035) — badges
 // read as one tonal family stretched across hue, not an unrelated rainbow.
@@ -506,9 +535,35 @@ function renderSetup(){
       </div>
 
       <div class="concept-panel">
-        <div>
-          <span class="card-kicker">Optional &mdash; sharpen the simulation</span>
-          <p class="text-muted" style="margin:4px 0 0;font-size:12px">Skip any of this and we'll use sensible defaults.</p>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+          <div>
+            <span class="card-kicker">Optional &mdash; sharpen the simulation</span>
+            <p class="text-muted" style="margin:4px 0 0;font-size:12px">Skip any of this and we'll use sensible defaults.</p>
+          </div>
+          <button type="button" class="btn btn-ghost" id="btn-randomize-context" style="font-size:12px;padding:2px 6px;white-space:nowrap"><i class="ph-bold ph-shuffle"></i> Just practicing</button>
+        </div>
+        <div class="row2">
+          <div class="field" style="margin-bottom:0">
+            <label>Company size</label>
+            <select class="input" id="f-company-size">
+              <option value="">Not selected</option>
+              ${COMPANY_SIZES.map(o=>`<option value="${o.id}" ${p.companySize===o.id?'selected':''}>${esc(o.label)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Your years of experience</label>
+            <select class="input" id="f-years-exp">
+              <option value="">Not selected</option>
+              ${YEARS_EXPERIENCE.map(o=>`<option value="${o.id}" ${p.yearsExperience===o.id?'selected':''}>${esc(o.label)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>Company culture</label>
+          <select class="input" id="f-company-culture">
+            <option value="">Not selected</option>
+            ${COMPANY_CULTURES.map(o=>`<option value="${o.id}" ${p.companyCulture===o.id?'selected':''}>${esc(o.label)}</option>`).join('')}
+          </select>
         </div>
         <div class="row2">
           <div class="field" style="margin-bottom:0">
@@ -955,6 +1010,17 @@ function attachHandlers(){
     document.getElementById('btn-build-plan').onclick = onBuildPlan;
     wireSetupValidation();
     wireFrameworkBadge();
+    const randomizeBtn = document.getElementById('btn-randomize-context');
+    if(randomizeBtn) randomizeBtn.onclick = ()=>{
+      const pick = (options, elId)=>{
+        const el = document.getElementById(elId);
+        if(!el) return;
+        el.value = options[Math.floor(Math.random() * options.length)].id;
+      };
+      pick(COMPANY_SIZES, 'f-company-size');
+      pick(YEARS_EXPERIENCE, 'f-years-exp');
+      pick(COMPANY_CULTURES, 'f-company-culture');
+    };
   }
   if(VIEW==='plan'){
     document.querySelectorAll('.plan-bullet li[contenteditable]').forEach(li=>{
@@ -1048,7 +1114,7 @@ function attachHandlers(){
 function reuseScenario(scId){
   const sc = DATA.scenarios.find(s=>s.id===scId);
   if(!sc) return;
-  draft = { prefill: { name: sc.name, title: sc.title, goal: sc.goal, mgrName: sc.mgrName, mgrDisp: sc.mgrDisp }, concepts: [], existingScenarioId: sc.id };
+  draft = { prefill: { name: sc.name, title: sc.title, goal: sc.goal, mgrName: sc.mgrName, mgrDisp: sc.mgrDisp, companySize: sc.companySize, yearsExperience: sc.yearsExperience, companyCulture: sc.companyCulture }, concepts: [], existingScenarioId: sc.id };
   VIEW = 'setup';
   render();
 }
@@ -1057,7 +1123,7 @@ function resumeAttempt(at){
   const sc = DATA.scenarios.find(s=>s.id===at.scenarioId);
   if(!sc) return;
   draft = {
-    prefill: { name: sc.name, title: sc.title, goal: sc.goal, mgrName: sc.mgrName, mgrDisp: sc.mgrDisp },
+    prefill: { name: sc.name, title: sc.title, goal: sc.goal, mgrName: sc.mgrName, mgrDisp: sc.mgrDisp, companySize: sc.companySize, yearsExperience: sc.yearsExperience, companyCulture: sc.companyCulture },
     framework: at.framework, concepts: at.concepts || [],
     existingScenarioId: sc.id, scenarioId: sc.id, attemptId: at.id,
     plan: at.plan, transcript: at.transcript || [], summaryTags: at.summaryTags || [],
@@ -1073,11 +1139,14 @@ async function onBuildPlan(){
   const goal = document.getElementById('f-goal').value.trim();
   const mgrName = document.getElementById('f-mgr-name').value.trim();
   const mgrDisp = document.getElementById('f-mgr-disp').value.trim();
+  const companySize = document.getElementById('f-company-size').value;
+  const yearsExperience = document.getElementById('f-years-exp').value;
+  const companyCulture = document.getElementById('f-company-culture').value;
   const framework = document.getElementById('f-framework').value || 'two';
   const concepts = (draft && draft.concepts) ? draft.concepts : [];
   if(!name || !title || !goal) return;
 
-  const prefill = { name, title, goal, mgrName, mgrDisp };
+  const prefill = { name, title, goal, mgrName, mgrDisp, companySize, yearsExperience, companyCulture };
   const existingScenarioId = draft ? draft.existingScenarioId : null;
   draft = { prefill, framework, concepts, existingScenarioId };
 
@@ -1117,6 +1186,9 @@ async function generatePlan(prefill, framework, concepts){
   const userMsg = `Person: ${prefill.name}, ${prefill.title}.
 Goal of the raise ask: ${prefill.goal}
 Counterpart: ${prefill.mgrName || 'unspecified manager'}, disposition: ${prefill.mgrDisp || 'unspecified'}
+${prefill.companySize ? 'Company size: ' + companySizeLabel(prefill.companySize) : ''}
+${prefill.yearsExperience ? 'Employee experience level: ' + yearsExperienceLabel(prefill.yearsExperience) : ''}
+${prefill.companyCulture ? 'Company culture: ' + companyCultureLabel(prefill.companyCulture) : ''}
 ${concepts.length ? 'Concepts to stress-test in the bullets where relevant: ' + concepts.join(', ') : ''}
 
 ${sectionSpecForFramework(framework)}
@@ -1193,7 +1265,12 @@ async function onSendMessage(){
   const progressNote = turnCount >= 5
     ? ' The conversation has gone on for a while now — if the employee has given any legitimate justification across the conversation, this is a natural point to make a real concession, agree to concrete terms, or land on a clear next step rather than repeating an earlier objection.'
     : '';
-  const system = `You are roleplaying as ${mgrName}, the manager in a salary raise negotiation with ${draft.prefill.name}, who holds the title "${draft.prefill.title}". Manager disposition: ${mgrDisp}. The employee's stated goal: ${draft.prefill.goal}.
+  const contextNote = [
+    draft.prefill.companySize ? 'Company size: ' + companySizeLabel(draft.prefill.companySize) + '.' : '',
+    draft.prefill.yearsExperience ? "Employee's experience level: " + yearsExperienceLabel(draft.prefill.yearsExperience) + '.' : '',
+    draft.prefill.companyCulture ? 'Company culture: ' + companyCultureLabel(draft.prefill.companyCulture) + '.' : '',
+  ].filter(Boolean).join(' ');
+  const system = `You are roleplaying as ${mgrName}, the manager in a salary raise negotiation with ${draft.prefill.name}, who holds the title "${draft.prefill.title}". Manager disposition: ${mgrDisp}. The employee's stated goal: ${draft.prefill.goal}.${contextNote ? ' ' + contextNote + ' Let this context genuinely shape your budget flexibility, approval process, and tone (e.g. a resource-constrained startup manager has less room to maneuver but can also move faster without red tape; a large enterprise manager may need to defer to process but often has bigger budget bands; more years of experience in the employee should be taken as a stronger, more credible case).' : ''}
 Stay fully in character as the manager only — never break character, never give coaching advice, never speak as narrator.
 Negotiate realistically, like a real person who wants a good outcome — not an obstacle designed to never yield. Open reasonably firm and probe with genuine questions or real constraints (budget cycles, precedent, needing to check with others), consistent with the disposition. But actually listen: when the employee gives strong, specific reasoning — data, market comparisons, concrete scope or impact — take it seriously and move, whether that's a partial concession, agreeing to specific terms, or committing to a clear next step. Don't repeat the same objection turn after turn without new movement, and don't stall indefinitely just to seem tough. It is completely fine, and often the right call, to agree to the ask (in full or in part) once the case for it is genuinely strong. Natural spoken dialogue, no stage directions, no markdown.${lengthNote}${progressNote}`;
 

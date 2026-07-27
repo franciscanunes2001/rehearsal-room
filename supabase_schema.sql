@@ -43,3 +43,10 @@ create policy "Users manage own attempts" on attempts
 
 create index if not exists attempts_scenario_id_idx on attempts (scenario_id);
 create index if not exists scenarios_group_key_idx on scenarios (group_key);
+
+-- Added later: optional scenario context (company size/culture, employee experience)
+-- used to ground the AI plan and the manager's negotiating room. Safe to re-run —
+-- each statement is a no-op if the column already exists.
+alter table scenarios add column if not exists company_size text;
+alter table scenarios add column if not exists years_experience text;
+alter table scenarios add column if not exists company_culture text;
