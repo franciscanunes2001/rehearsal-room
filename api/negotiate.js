@@ -34,7 +34,7 @@ export default async function handler(req, res) {
   const body = {
     contents,
     ...(system ? { system_instruction: { parts: [{ text: system }] } } : {}),
-    generationConfig: { maxOutputTokens: 4096 }
+    generationConfig: { maxOutputTokens: 8192 }
   };
 
   try {
@@ -49,16 +49,30 @@ export default async function handler(req, res) {
     const data = await r.json();
 
     if (!r.ok) {
-      res.status(r.status).json({ error: data?.error?.message || 'Gemini request failed' });
+      console.error('Gemini request failed', r.status, data?.error);
+      // On rate-limit/quota errors (429), Google includes a suggested wait in
+      // error.details as a RetryInfo entry (e.g. retryDelay: "19.38s") — surface it
+      // so the client can wait and retry once instead of just giving up.
+      const retryInfo = data?.error?.details?.find(d => d['@type']?.includes('RetryInfo'));
+      const retryAfterSeconds = retryInfo?.retryDelay ? parseFloat(retryInfo.retryDelay) : null;
+      res.status(r.status).json({ error: data?.error?.message || 'Gemini request failed', retryAfterSeconds });
       return;
     }
 
-    const text = (data?.candidates?.[0]?.content?.parts || [])
-      .map(p => p.text || '')
-      .join('');
+    const candidate = data?.candidates?.[0];
+    const text = (candidate?.content?.parts || []).map(p => p.text || '').join('');
+    const finishReason = candidate?.finishReason;
 
-    res.status(200).json({ text });
+    // finishReason other than STOP means the response was cut short (hit the token
+    // cap) or withheld (safety/recitation) — surface it so the caller can tell that
+    // apart from a plain network failure instead of just seeing an empty string.
+    if (!text || (finishReason && finishReason !== 'STOP')) {
+      console.error('Gemini returned no usable text', { finishReason, promptFeedback: data?.promptFeedback });
+    }
+
+    res.status(200).json({ text, finishReason });
   } catch (err) {
+    console.error('negotiate handler threw', err);
     res.status(500).json({ error: String(err) });
   }
 }

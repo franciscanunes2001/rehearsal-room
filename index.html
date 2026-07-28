@@ -327,7 +327,9 @@ async function deleteAttemptRecord(id){
 }
 
 /* ---------------- AI helper (routed through our serverless proxy) ---------------- */
-async function askAI(system, messages, wantJSON){
+function sleep(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
+
+async function askAI(system, messages, wantJSON, _isRetry){
   let text = '';
   try{
     const res = await fetch('/api/negotiate', {
@@ -336,7 +338,19 @@ async function askAI(system, messages, wantJSON){
       body: JSON.stringify({ system, messages })
     });
     const data = await res.json();
-    if(!res.ok){ console.error('AI proxy error', data); }
+    if(!res.ok){
+      console.error('AI proxy error', res.status, data);
+      // Google tells us exactly how long to back off on a 429 — wait that long
+      // (capped, so a runaway value can't hang the UI) and retry once.
+      if(res.status === 429 && data.retryAfterSeconds && !_isRetry){
+        const waitMs = Math.min(Math.ceil(data.retryAfterSeconds) * 1000, 30000) + 500;
+        console.error(`Rate-limited — retrying once in ${Math.round(waitMs/1000)}s`);
+        await sleep(waitMs);
+        return askAI(system, messages, wantJSON, true);
+      }
+    }
+    else if(!data.text){ console.error('AI proxy returned no text — likely truncated or blocked', { finishReason: data.finishReason }); }
+    else if(data.finishReason && data.finishReason !== 'STOP'){ console.error('AI response did not finish normally', { finishReason: data.finishReason }); }
     text = data.text || '';
   }catch(e){ console.error('askAI failed', e); }
 
@@ -345,7 +359,12 @@ async function askAI(system, messages, wantJSON){
     try{ return JSON.parse(cleaned); }
     catch(e){
       const match = cleaned.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
-      if(match){ try{ return JSON.parse(match[0]); }catch(e2){} }
+      if(match){
+        try{ return JSON.parse(match[0]); }
+        catch(e2){ console.error('askAI: could not parse JSON even after extracting braces — response was likely truncated', cleaned.slice(0, 200)); }
+      } else {
+        console.error('askAI: response contained no JSON object at all', text.slice(0, 200));
+      }
       return null;
     }
   }
