@@ -214,16 +214,20 @@
   .composer-row .input{ flex:1; }
 
   /* ---- history ---- */
-  .attempt-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:14px; }
+  .attempt-grid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; }
   .attempt-card{ cursor:pointer; padding:var(--space-4); gap:8px; }
   .attempt-date{ font-size:11px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:color-mix(in srgb, var(--color-text) 45%, transparent); }
 
   .two-col{ display:grid; grid-template-columns:62% 1fr; gap:24px; }
 
   /* ---- mobile ---- */
+  @media (max-width:1100px){
+    .attempt-grid{ grid-template-columns:repeat(3, 1fr); }
+  }
   @media (max-width:880px){
     .live-layout, .two-col{ grid-template-columns:1fr; }
     .two-col{ gap:16px; }
+    .attempt-grid{ grid-template-columns:repeat(2, 1fr); }
   }
   @media (max-width:820px){
     .app-shell{ flex-direction:column; }
@@ -242,6 +246,7 @@
     .live-toolbar{ padding:16px 18px 0; }
     .live-body{ padding:14px 18px 20px; }
     .msg{ max-width:90%; }
+    .attempt-grid{ grid-template-columns:1fr; }
   }
 </style>
 </head>
@@ -296,7 +301,7 @@ async function loadData(){
     DATA.attempts = (attempts||[]).map(a=>({
       id: a.id, scenarioId: a.scenario_id, framework: a.framework, concepts: a.concepts,
       plan: a.plan, transcript: a.transcript, summaryTags: a.summary_tags,
-      outcome: a.outcome, status: a.status, feedback: a.feedback, createdAt: new Date(a.created_at).getTime()
+      outcome: a.outcome, status: a.status, feedback: a.feedback, notes: a.notes, createdAt: new Date(a.created_at).getTime()
     }));
   }catch(e){ console.error('loadData failed', e); }
 }
@@ -384,6 +389,8 @@ let liveLoading = false;
 let summaryLoading = false;
 let feedbackLoading = false;
 let showLeaveDialog = false;
+let showCloseDialog = false;
+let closeDialogStep = 'confirm'; // 'confirm' | 'comment'
 
 const DETAIL_KEY = 'accord-response-detail-v1';
 let RESPONSE_DETAIL = 'concise'; // 'concise' | 'detailed'
@@ -755,9 +762,13 @@ function renderLive(){
     <div class="live-toolbar-row">
       <button class="btn btn-secondary" id="btn-pause" style="font-size:13px"><i class="ph-bold ph-arrow-left"></i> Continue later</button>
       <span class="text-muted" style="font-size:13px">Live simulation with ${esc(mgrName)}</span>
-      <span style="display:inline-flex;align-items:center;gap:5px;margin-left:auto;font-family:var(--font-heading);font-size:11px;letter-spacing:0.08em;color:var(--color-accent)">
-        <span class="live-dot" style="width:6px;height:6px;border-radius:50%;background:var(--color-accent);display:inline-block"></span>LIVE
-      </span>
+      <div style="display:flex;align-items:center;gap:10px;margin-left:auto">
+        <button class="btn btn-primary" id="btn-close-agreement" style="font-size:12.5px;padding:6px 12px;font-weight:700"><i class="ph-bold ph-handshake"></i> Close with agreement</button>
+        <button class="btn btn-secondary" id="btn-leave" style="font-size:12.5px;padding:6px 12px"><i class="ph-bold ph-sign-out"></i> Leave negotiation</button>
+        <span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-heading);font-size:11px;letter-spacing:0.08em;color:var(--color-accent)">
+          <span class="live-dot" style="width:6px;height:6px;border-radius:50%;background:var(--color-accent);display:inline-block"></span>LIVE
+        </span>
+      </div>
     </div>
   </div>
   <div class="live-body">
@@ -822,9 +833,6 @@ function renderLive(){
             }).join('')}
           </div>` : `<p class="text-muted" style="margin:0;font-size:13px">Nothing tracked yet &mdash; start talking.</p>`}
       </div>
-
-      <button class="btn btn-primary btn-block" id="btn-close-agreement" style="font-size:13.5px;font-weight:700"><i class="ph-bold ph-handshake"></i> Close with agreement</button>
-      <button class="btn btn-secondary" id="btn-leave" style="font-size:13.5px"><i class="ph-bold ph-sign-out"></i> Leave negotiation</button>
     </div>
   </div>
 
@@ -837,6 +845,34 @@ function renderLive(){
         <button class="btn btn-ghost" id="btn-leave-cancel">Cancel</button>
         <button class="btn btn-secondary" id="btn-leave-discard">Discard</button>
         <button class="btn btn-primary" id="btn-leave-save">Save &amp; exit</button>
+      </div>
+    </div>
+  </div>` : ''}
+
+  ${showCloseDialog && closeDialogStep === 'confirm' ? `
+  <div class="dialog-backdrop">
+    <div class="dialog">
+      <h4 class="dialog-title">Did it actually close?</h4>
+      <p class="dialog-body">Confirm whether the manager actually agreed to your ask before marking this as closed.</p>
+      <div class="dialog-actions">
+        <button class="btn btn-ghost" id="btn-close-cancel">Cancel</button>
+        <button class="btn btn-secondary" id="btn-close-no">No, not quite</button>
+        <button class="btn btn-primary" id="btn-close-yes">Yes, we agreed</button>
+      </div>
+    </div>
+  </div>` : ''}
+
+  ${showCloseDialog && closeDialogStep === 'comment' ? `
+  <div class="dialog-backdrop">
+    <div class="dialog">
+      <h4 class="dialog-title">What happened instead?</h4>
+      <p class="dialog-body">Optional — add a quick note on how it actually ended. This helps ground your feedback.</p>
+      <div class="field" style="margin-bottom:0">
+        <textarea class="input" id="close-comment" placeholder="e.g. Manager said they'd need to check with their director first."></textarea>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn btn-ghost" id="btn-close-back">Back</button>
+        <button class="btn btn-primary" id="btn-close-submit">Continue</button>
       </div>
     </div>
   </div>` : ''}
@@ -955,7 +991,7 @@ function renderScenarioGroups(groupList){
 function renderHome(){
   const groupList = groupAttempts();
   return `
-  <div class="screen" style="max-width:1040px">
+  <div class="screen">
     <div style="display:flex;align-items:center;gap:16px">
       <div style="flex:1">
         <h1 style="font-size:26px">Your negotiations</h1>
@@ -1037,6 +1073,11 @@ function renderDetail(){
             }).join('') || '<span class="text-muted" style="font-size:13px">No tags recorded.</span>'}
           </div>
         </div>
+        ${at.notes ? `
+        <div class="card elev-sm" style="padding:var(--space-4);gap:8px">
+          <h5 style="margin:0">Your notes</h5>
+          <p class="text-muted" style="margin:0;font-size:13px">${esc(at.notes)}</p>
+        </div>` : ''}
         ${at.feedback ? `
         <div class="card elev-sm" style="padding:var(--space-4);gap:8px">
           <h5 style="margin:0">Feedback</h5>
@@ -1263,7 +1304,7 @@ function attachHandlers(){
     const pauseBtn = document.getElementById('btn-pause');
     if(pauseBtn) pauseBtn.onclick = pauseAndExit;
     const closeBtn = document.getElementById('btn-close-agreement');
-    if(closeBtn) closeBtn.onclick = closeWithAgreement;
+    if(closeBtn) closeBtn.onclick = ()=>{ showCloseDialog = true; closeDialogStep = 'confirm'; render(); };
     const leaveBtn = document.getElementById('btn-leave');
     if(leaveBtn) leaveBtn.onclick = ()=>{ showLeaveDialog = true; render(); };
     const cancelBtn = document.getElementById('btn-leave-cancel');
@@ -1272,6 +1313,21 @@ function attachHandlers(){
     if(discardBtn) discardBtn.onclick = onDiscardAttempt;
     const saveBtn = document.getElementById('btn-leave-save');
     if(saveBtn) saveBtn.onclick = onSaveAndExit;
+    const closeCancelBtn = document.getElementById('btn-close-cancel');
+    if(closeCancelBtn) closeCancelBtn.onclick = ()=>{ showCloseDialog = false; render(); };
+    const closeNoBtn = document.getElementById('btn-close-no');
+    if(closeNoBtn) closeNoBtn.onclick = ()=>{ closeDialogStep = 'comment'; render(); };
+    const closeYesBtn = document.getElementById('btn-close-yes');
+    if(closeYesBtn) closeYesBtn.onclick = ()=>{ showCloseDialog = false; closeWithAgreement(); };
+    const closeBackBtn = document.getElementById('btn-close-back');
+    if(closeBackBtn) closeBackBtn.onclick = ()=>{ closeDialogStep = 'confirm'; render(); };
+    const closeSubmitBtn = document.getElementById('btn-close-submit');
+    if(closeSubmitBtn) closeSubmitBtn.onclick = ()=>{
+      const commentEl = document.getElementById('close-comment');
+      const comment = commentEl ? commentEl.value.trim() : '';
+      showCloseDialog = false;
+      closeWithoutAgreement(comment);
+    };
   }
   if(VIEW==='feedback'){
     const doneBtn = document.getElementById('btn-feedback-done');
@@ -1464,7 +1520,7 @@ function fallbackPlan(prefill){
   };
 }
 
-async function generateFeedback(prefill, transcript, plan){
+async function generateFeedback(prefill, transcript, plan, comment){
   const lengthNote = RESPONSE_DETAIL === 'detailed'
     ? ' In detailed mode, assessments can run 3-4 sentences and use up to 4 bullets per element.'
     : ' In concise mode, keep assessments to 2 sentences and 2-3 bullets per element.';
@@ -1491,6 +1547,7 @@ ${planRef}
 
 Full transcript of the actual conversation:
 ${transcriptText}
+${comment ? `\nThe employee's own note on how it ended: "${comment}" — factor this into the overall summary and relevant elements (it did not close with agreement).` : ''}
 
 Give feedback per the 7 Elements framework as instructed. Return only the JSON object.`;
 
@@ -1549,6 +1606,7 @@ async function saveAttemptSnapshot(status){
     outcome: draft.outcome || null,
     status: status || 'in-progress',
     feedback: draft.feedback || null,
+    notes: draft.notes || null,
     created_at: new Date(draft.createdAt).toISOString(),
     updated_at: new Date().toISOString()
   };
@@ -1558,7 +1616,7 @@ async function saveAttemptSnapshot(status){
   const local = {
     id: draft.attemptId, scenarioId: draft.scenarioId, framework: draft.framework, concepts: draft.concepts,
     plan: draft.plan, transcript: draft.transcript, summaryTags: draft.summaryTags,
-    outcome: draft.outcome || null, status: status || 'in-progress', feedback: draft.feedback || null, createdAt: draft.createdAt
+    outcome: draft.outcome || null, status: status || 'in-progress', feedback: draft.feedback || null, notes: draft.notes || null, createdAt: draft.createdAt
   };
   const idx = DATA.attempts.findIndex(a=>a.id===draft.attemptId);
   if(idx>-1) DATA.attempts[idx] = local; else DATA.attempts.push(local);
@@ -1625,12 +1683,31 @@ async function pauseAndExit(){
 
 async function closeWithAgreement(){
   draft.outcome = 'Manager agreed';
-  showLeaveDialog = false;
   VIEW = 'feedback';
   feedbackLoading = true;
   render();
 
   draft.feedback = await generateFeedback(draft.prefill, draft.transcript, draft.plan);
+  feedbackLoading = false;
+  await saveAttemptSnapshot('completed');
+  render();
+}
+
+async function closeWithoutAgreement(comment){
+  draft.notes = comment || null;
+  VIEW = 'feedback';
+  feedbackLoading = true;
+  render();
+
+  const outcomeSystem = `Summarize the outcome of this salary negotiation roleplay in one short punchy tag, 3-6 words, e.g. "Held anchor", "Deferred to next review", "Manager pushed back". Output ONLY valid JSON: {"outcome":"..."}`;
+  const transcriptText = draft.transcript.map(m=> (m.role==='user'?'Employee: ':'Manager: ') + m.text).join('\n') || '(no messages were exchanged)';
+  const commentNote = comment ? `\n\nThe employee's own note on how it ended: "${comment}"` : '';
+  const [outcomeResult, feedback] = await Promise.all([
+    askAI(outcomeSystem, [{role:'user', content: transcriptText + commentNote}], true),
+    generateFeedback(draft.prefill, draft.transcript, draft.plan, comment),
+  ]);
+  draft.outcome = (outcomeResult && outcomeResult.outcome) ? outcomeResult.outcome : (comment ? 'Ended without agreement — see notes' : 'Ended without agreement');
+  draft.feedback = feedback;
   feedbackLoading = false;
   await saveAttemptSnapshot('completed');
   render();

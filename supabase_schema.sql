@@ -60,3 +60,7 @@ alter table scenarios add column if not exists timeline text;
 -- Added later: post-conversation feedback (7 Elements assessment) generated when an
 -- attempt is completed. Safe to re-run.
 alter table attempts add column if not exists feedback jsonb;
+
+-- Added later: the employee's own note on how the negotiation ended, captured when
+-- "Close with agreement" is declined in favor of "No, not quite". Safe to re-run.
+alter table attempts add column if not exists notes text;
