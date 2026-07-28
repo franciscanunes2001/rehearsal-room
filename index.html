@@ -385,6 +385,7 @@ let VIEW = 'home'; // home | setup | plan | live | feedback | detail | settings
 let draft = null;     // in-progress setup+plan+attempt object being built
 let historyDetail = null; // attempt id being viewed read-only
 let historyDetailStep = 'feedback'; // 'scene' | 'plan' | 'practice' | 'feedback'
+let homeFilter = 'all'; // 'all' | 'in-progress' | 'completed'
 let planLoading = false;
 let liveLoading = false;
 let summaryLoading = false;
@@ -1010,7 +1011,20 @@ function renderAttemptCard(at){
 }
 
 function renderHome(){
-  const attempts = DATA.attempts.slice().sort((a,b)=>b.createdAt-a.createdAt);
+  const allAttempts = DATA.attempts.slice().sort((a,b)=>b.createdAt-a.createdAt);
+  const counts = {
+    all: allAttempts.length,
+    'in-progress': allAttempts.filter(a=>a.status==='in-progress').length,
+    completed: allAttempts.filter(a=>a.status!=='in-progress').length,
+  };
+  const filtered = homeFilter==='all' ? allAttempts : allAttempts.filter(a=>
+    homeFilter==='in-progress' ? a.status==='in-progress' : a.status!=='in-progress'
+  );
+  const filterOptions = [
+    { key:'all', label:'All' },
+    { key:'in-progress', label:'In progress' },
+    { key:'completed', label:'Completed' },
+  ];
   return `
   <div class="screen">
     <div style="display:flex;align-items:center;gap:16px">
@@ -1020,11 +1034,23 @@ function renderHome(){
       </div>
       <button class="btn btn-primary" id="btn-new-scenario"><i class="ph-bold ph-plus-circle"></i> New scenario</button>
     </div>
-    ${attempts.length===0 ? `
+    ${allAttempts.length>0 ? `
+    <div class="seg" style="align-self:flex-start">
+      ${filterOptions.map(o=>`
+        <label class="seg-opt">
+          <input type="radio" name="home-filter" class="home-filter-opt" data-filter="${o.key}" ${homeFilter===o.key?'checked':''} />
+          <span>${esc(o.label)} (${counts[o.key]})</span>
+        </label>
+      `).join('')}
+    </div>` : ''}
+    ${allAttempts.length===0 ? `
       <div class="card elev-sm" style="padding:var(--space-6);gap:12px;align-items:flex-start">
         <p style="margin:0;font-size:14.5px">No negotiations yet.</p>
         <button class="btn btn-primary" id="btn-first-scenario">Start your first negotiation</button>
-      </div>` : `<div class="attempt-grid">${attempts.map(renderAttemptCard).join('')}</div>`}
+      </div>` : (filtered.length===0 ? `
+      <div class="card elev-sm" style="padding:var(--space-6);gap:12px;align-items:flex-start">
+        <p class="text-muted" style="margin:0;font-size:14.5px">No negotiations match this filter.</p>
+      </div>` : `<div class="attempt-grid">${filtered.map(renderAttemptCard).join('')}</div>`)}
   </div>`;
 }
 
@@ -1350,6 +1376,9 @@ function attachHandlers(){
     if(newBtn) newBtn.onclick = startNewScenario;
     const firstBtn = document.getElementById('btn-first-scenario');
     if(firstBtn) firstBtn.onclick = startNewScenario;
+    document.querySelectorAll('.home-filter-opt').forEach(el=>{
+      el.addEventListener('change', ()=>{ homeFilter = el.getAttribute('data-filter'); render(); });
+    });
     document.querySelectorAll('.attempt-card').forEach(card=>{
       card.addEventListener('click', (e)=>{
         if(e.target.closest('.btn-try-different') || e.target.closest('.btn-resume')) return;
