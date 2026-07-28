@@ -1275,7 +1275,7 @@ This is prep for an actual upcoming conversation, not a generic explainer — ev
 Output ONLY valid JSON, no preamble, no markdown fences, matching exactly this schema:
 {"context":string,"sections":[{"title":string,"analysis":string,"bullets":[string,...],"script":string,"risk":string}],"recommendedOpeningMove":string,"whereExposed":[string,...]}
 
-- "context": a robust restatement of the situation, roughly 10-15 short lines (separate with \\n), covering who's involved, the ask, constraints, and anything else load-bearing. If the given input is thin, flesh it out with reasonable, clearly-useful specifics rather than leaving it sparse.
+- "context": a robust, connected narrative summary of the situation (not a field-by-field list), roughly 10-15 short lines (separate with \\n), covering who's involved, the ask, constraints, and anything else load-bearing. If the given input is thin, invent specific, plausible, realistic details to fill the gap (a concrete number, a specific manager style, a specific BATNA scenario) rather than a vague placeholder like "assume moderately firm" — specificity is what makes the rehearsal feel real. Tag every invented detail inline as "[Assumption: ...]" so it's clear what's real input versus fabricated for realism.
 - "sections": produce exactly 7, titled in this order: "Interests", "Legitimacy", "Relationships", "Alternatives (BATNA/WATNA)", "Options", "Commitments", "Communication". For each: "analysis" reasons from the context (the "why", not just the label); "bullets" are concrete specifics tied to the actual situation, role, manager, and numbers given; "script" is at least one ready-to-use sentence or two, written as the literal bare words to say out loud, with NO surrounding quotation marks (the display already adds them — quoting a quote inside another quote is a mistake to avoid); "risk" is one specific failure mode for that element and how to avoid it.
 - "recommendedOpeningMove": a literal script — the actual first 2-3 sentences to say, not a paraphrase or description. This one SHOULD be wrapped in its own quotation marks, since it's shown plain with no added quote styling.
 - "whereExposed": 2-3 bullets naming the weakest parts of this specific plan given what's known, and what to firm up before the conversation.
@@ -1312,22 +1312,26 @@ Return only the JSON object.`;
 function fallbackPlan(prefill){
   const goal = (prefill.goal || 'a raise').replace(/\.+\s*$/, '');
   const mgrName = prefill.mgrName || 'your manager';
-  const batnaLine = prefill.batna
-    ? `Your stated alternative: ${prefill.batna}.`
-    : '[Assumption: no BATNA was supplied] You have not named a real alternative yet — do this before the conversation, even if you never plan to use it.';
-  const timelineLine = prefill.timeline
-    ? `Timeline: ${prefill.timeline}.`
-    : '[Assumption: no timeline was supplied] No specific timing constraint is known — assume a standard review cycle unless you have reason to move faster.';
+  const mgrDispText = prefill.mgrDisp
+    || `[Assumption: invented for rehearsal] a moderately firm, detail-oriented manager who has to justify raises upward rather than someone swayed by appeals to fairness alone`;
+  const companySizeText = prefill.companySize ? companySizeLabel(prefill.companySize)
+    : `[Assumption: invented for rehearsal] a mid-size company (roughly 100-500 people), where a raise needs one level of approval above the direct manager but isn't a rare event`;
+  const companyCultureText = prefill.companyCulture ? companyCultureLabel(prefill.companyCulture)
+    : `[Assumption: invented for rehearsal] a scale-up-style culture — comp bands and approval steps are still being formalized, which cuts both ways: more flexibility, but less precedent to point to`;
+  const experienceText = prefill.yearsExperience ? yearsExperienceLabel(prefill.yearsExperience)
+    : `[Assumption: invented for rehearsal] roughly 4-6 years in the role — enough tenure for a credible scope-based case, without the raise being simply overdue`;
+  const batnaText = prefill.batna || `[Assumption: invented for rehearsal — replace with your real one] a recent, informal conversation with a recruiter at a comparable company, nothing signed, but enough to know the market would be receptive`;
+  const timelineText = prefill.timeline || `[Assumption: invented for rehearsal — replace with your real one] the next formal review cycle is roughly 6-8 weeks out, giving a natural, non-desperate deadline to reference if needed`;
+  const batnaLine = `Best alternative (BATNA): ${batnaText}.`;
+  const timelineLine = `Timeline: ${timelineText}.`;
   return {
     context: [
-      `${prefill.name || 'You'} (${prefill.title || 'your role'}) is preparing to ask ${mgrName} for: ${goal}.`,
-      `Manager disposition: ${prefill.mgrDisp || '[Assumption: not supplied] assume moderately firm, budget-conscious, not a pushover.'}`,
-      `Company size: ${prefill.companySize ? companySizeLabel(prefill.companySize) : '[Assumption: not supplied] assume a mid-size company with some but not unlimited budget flexibility.'}`,
-      `Company culture: ${prefill.companyCulture ? companyCultureLabel(prefill.companyCulture) : '[Assumption: not supplied] assume a fairly standard corporate approval process.'}`,
-      `Experience level: ${prefill.yearsExperience ? yearsExperienceLabel(prefill.yearsExperience) : '[Assumption: not supplied] assume solid, established tenure in the role.'}`,
+      `${prefill.name || 'You'} is a ${prefill.title || 'employee'} preparing to ask ${mgrName} for: ${goal}.`,
+      `${mgrName} is ${mgrDispText}, at ${companySizeText}, with a culture best described as ${companyCultureText}.`,
+      `${prefill.name || 'You'} bring${prefill.name ? 's' : ''} ${experienceText} to this ask.`,
       batnaLine,
       timelineLine,
-      'This plan was generated offline (the AI service was unavailable) using only the details above — treat the [Assumption] tags as gaps to fill in yourself before the real conversation.',
+      'This plan was generated offline (the AI service was unavailable). Every line tagged [Assumption] was invented to make the rehearsal realistic and specific rather than generic — swap each one for your real details before an actual conversation.',
     ].join('\n'),
     sections: [
       { title:'Interests', analysis:`Look past the number to what ${prefill.name || 'you'} actually need, and what that reveals about your manager's own constraints.`, bullets:[`[Assumption: no deeper motivation was given] The underlying driver is likely recognition for unrewarded scope — name that directly, not just "${goal}".`, `Your manager's interest is probably protecting budget precedent and their own credibility with their boss.`, 'Distinguish the stated ask from the real "why" when you speak, so the conversation isn\'t just about the number.'], script:`This isn't just about the number for me — it's about ${goal.toLowerCase()} being recognized as a real step up in scope.`, risk:'Leading with the number instead of the reason makes it easy to say no. Lead with the "why."' },
@@ -1340,9 +1344,9 @@ function fallbackPlan(prefill){
     ],
     recommendedOpeningMove: `"Hi ${mgrName}, do you have a few minutes? Before I get into specifics, I wanted to ask what constraints you're working with this cycle — I want to make sure what I'm proposing actually fits."`,
     whereExposed: [
-      prefill.batna ? 'Your BATNA is named but its credibility is untested — make sure it would actually hold up if referenced indirectly.' : '[Assumption gap] No real BATNA was supplied — this plan cannot responsibly script your walk-away leverage until you supply one.',
+      prefill.batna ? 'Your BATNA is named but its credibility is untested — make sure it would actually hold up if referenced indirectly.' : '[Assumption gap] The BATNA above was invented for rehearsal, not supplied by you — it will not hold up in a real conversation until you replace it with your actual alternative.',
       'Market data and internal comp bands are assumed, not confirmed — firm these up with real numbers before the conversation if at all possible.',
-      prefill.timeline ? 'Timeline is known but the manager\'s own calendar/budget cycle constraints are still a guess — confirm if you can.' : '[Assumption gap] No timeline was supplied — the sequencing and urgency framing in this plan are generic until you add one.',
+      prefill.timeline ? 'Timeline is known but the manager\'s own calendar/budget cycle constraints are still a guess — confirm if you can.' : '[Assumption gap] The timeline above was invented for rehearsal — confirm the real review cycle or deadline before relying on this plan\'s sequencing.',
     ],
   };
 }
