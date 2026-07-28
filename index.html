@@ -193,7 +193,6 @@
   .plan-risk{ display:flex; gap:6px; align-items:flex-start; font-size:12.5px; margin:2px 0 0; color:oklch(78% 0.09 78); }
   .plan-risk i{ margin-top:2px; flex:none; }
   .plan-risk span:focus{ outline:none; }
-  .plan-context{ white-space:pre-wrap; }
   .plan-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(400px, 1fr)); gap:var(--space-4); }
 
   /* ---- live ---- */
@@ -1376,9 +1375,6 @@ function attachHandlers(){
     if(newBtn) newBtn.onclick = startNewScenario;
     const firstBtn = document.getElementById('btn-first-scenario');
     if(firstBtn) firstBtn.onclick = startNewScenario;
-    document.querySelectorAll('.home-filter-opt').forEach(el=>{
-      el.addEventListener('change', ()=>{ homeFilter = el.getAttribute('data-filter'); render(); });
-    });
     document.querySelectorAll('.attempt-card').forEach(card=>{
       card.addEventListener('click', (e)=>{
         if(e.target.closest('.btn-try-different') || e.target.closest('.btn-resume')) return;
