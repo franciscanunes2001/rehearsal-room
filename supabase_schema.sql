@@ -54,3 +54,5 @@ create index if not exists scenarios_group_key_idx on scenarios (group_key);
 alter table scenarios add column if not exists company_size text;
 alter table scenarios add column if not exists years_experience text;
 alter table scenarios add column if not exists company_culture text;
+alter table scenarios add column if not exists batna text;
+alter table scenarios add column if not exists timeline text;

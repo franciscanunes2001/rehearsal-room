@@ -183,6 +183,12 @@
   .plan-bullet li{ flex:1; list-style:none; outline:none; border-radius:var(--radius-sm); padding:4px 6px; margin-left:-6px; font-size:14px; }
   .plan-bullet li:hover{ background:color-mix(in srgb, var(--color-text) 5%, transparent); }
   .plan-bullet li:focus{ background:color-mix(in srgb, var(--color-text) 5%, var(--color-surface)); box-shadow:0 0 0 1px var(--color-divider); }
+  .plan-script{ font-style:italic; border-left:2px solid var(--color-accent); padding:2px 0 2px 10px; margin:4px 0; font-size:13.5px; opacity:0.9; }
+  .plan-script span:focus{ outline:none; background:color-mix(in srgb, var(--color-text) 5%, transparent); border-radius:var(--radius-sm); }
+  .plan-risk{ display:flex; gap:6px; align-items:flex-start; font-size:12.5px; margin:2px 0 0; color:oklch(78% 0.09 78); }
+  .plan-risk i{ margin-top:2px; flex:none; }
+  .plan-risk span:focus{ outline:none; }
+  .plan-context{ white-space:pre-wrap; }
 
   /* ---- live ---- */
   .live-toolbar{ padding:20px 40px 0; display:flex; flex-direction:column; gap:16px; flex:none; }
@@ -278,7 +284,8 @@ async function loadData(){
     DATA.scenarios = (scenarios||[]).map(s=>({
       id: s.id, name: s.name, title: s.title, goal: s.goal,
       mgrName: s.mgr_name, mgrDisp: s.mgr_disp, groupKey: s.group_key,
-      companySize: s.company_size, yearsExperience: s.years_experience, companyCulture: s.company_culture
+      companySize: s.company_size, yearsExperience: s.years_experience, companyCulture: s.company_culture,
+      batna: s.batna, timeline: s.timeline
     }));
     DATA.attempts = (attempts||[]).map(a=>({
       id: a.id, scenarioId: a.scenario_id, framework: a.framework, concepts: a.concepts,
@@ -292,12 +299,14 @@ async function createScenario(prefill, groupKey){
   const { data, error } = await supabase.from('scenarios').insert({
     user_id: SESSION.user.id, name: prefill.name, title: prefill.title, goal: prefill.goal,
     mgr_name: prefill.mgrName || null, mgr_disp: prefill.mgrDisp || null, group_key: groupKey,
-    company_size: prefill.companySize || null, years_experience: prefill.yearsExperience || null, company_culture: prefill.companyCulture || null
+    company_size: prefill.companySize || null, years_experience: prefill.yearsExperience || null, company_culture: prefill.companyCulture || null,
+    batna: prefill.batna || null, timeline: prefill.timeline || null
   }).select().single();
   if(error){ console.error(error); return null; }
   const sc = {
     id:data.id, name:data.name, title:data.title, goal:data.goal, mgrName:data.mgr_name, mgrDisp:data.mgr_disp, groupKey:data.group_key,
-    companySize:data.company_size, yearsExperience:data.years_experience, companyCulture:data.company_culture
+    companySize:data.company_size, yearsExperience:data.years_experience, companyCulture:data.company_culture,
+    batna:data.batna, timeline:data.timeline
   };
   DATA.scenarios.push(sc);
   return sc;
@@ -394,6 +403,18 @@ const COMPANY_CULTURES = [
   { id: 'corporate', label: 'Corporate / enterprise — structured, slower approvals' },
   { id: 'nonprofit', label: 'Non-profit / mission-driven — budget-constrained, values-driven' },
   { id: 'public', label: 'Public sector / government — rigid process, strict budgets' },
+];
+const BATNA_EXAMPLES = [
+  'A verbal offer from another company at a similar level, not yet formal.',
+  'Actively interviewing elsewhere; nothing signed yet.',
+  'Could move to an adjacent internal team with a modest bump.',
+  'No concrete alternative yet — mostly leverage of being hard to replace right now.',
+];
+const TIMELINE_EXAMPLES = [
+  'Next formal review is in about 6 weeks.',
+  'No fixed deadline, but I’d like this resolved this quarter.',
+  'Company just closed its fiscal year, budget planning is happening now.',
+  'I’m flexible on timing, just want to start the conversation.',
 ];
 
 function frameworkLabel(id){
@@ -574,6 +595,16 @@ function renderSetup(){
             <input class="input" id="f-mgr-disp" type="text" value="${esc(p.mgrDisp||'')}" placeholder="Budget-constrained, data-driven">
           </div>
         </div>
+        <div class="row2">
+          <div class="field" style="margin-bottom:0">
+            <label>Your BATNA / best alternative</label>
+            <input class="input" id="f-batna" type="text" value="${esc(p.batna||'')}" placeholder="e.g. Verbal interest from another company, not yet formal">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Timeline</label>
+            <input class="input" id="f-timeline" type="text" value="${esc(p.timeline||'')}" placeholder="e.g. Next review is in 6 weeks">
+          </div>
+        </div>
         <div class="field" style="margin-bottom:0">
           <label>Framework</label>
           <div>
@@ -640,22 +671,41 @@ function renderPlan(){
       </div>
       <button class="btn btn-secondary" id="btn-regenerate" style="font-size:13px"><i class="ph-bold ph-arrow-clockwise"></i> Regenerate</button>
     </div>
-    ${(p.sections||[]).map((s,si)=>`
+    ${p.context ? `
+    <div class="card elev-sm" style="padding:var(--space-4);gap:6px">
+      <span class="card-kicker">Context</span>
+      <p class="plan-context" contenteditable="true" data-field="context" style="margin:0;font-size:13px;opacity:0.85">${esc(p.context)}</p>
+    </div>` : ''}
+    ${(p.sections||[]).map((s,si)=>{
+      const analysis = s.analysis || s.summary;
+      return `
       <div class="card elev-sm plan-section">
         <span class="card-kicker">${esc(s.title)}</span>
-        ${s.summary ? `<p class="plan-summary" contenteditable="true" data-si="${si}" style="margin:0;font-size:13.5px;opacity:0.9">${esc(s.summary)}</p>` : ''}
+        ${analysis ? `<p class="plan-summary" contenteditable="true" data-si="${si}" style="margin:0;font-size:13.5px;opacity:0.9">${esc(analysis)}</p>` : ''}
         ${(s.bullets||[]).map((b,bi)=>`
           <div class="plan-bullet">
             <span class="dot">&#9679;</span>
             <li contenteditable="true" data-si="${si}" data-bi="${bi}">${esc(b)}</li>
           </div>
         `).join('')}
+        ${s.script ? `<div class="plan-script">&ldquo;<span contenteditable="true" data-si="${si}">${esc(s.script)}</span>&rdquo;</div>` : ''}
+        ${s.risk ? `<div class="plan-risk"><i class="ph-bold ph-warning"></i><span contenteditable="true" data-si="${si}">${esc(s.risk)}</span></div>` : ''}
       </div>
-    `).join('')}
+    `;}).join('')}
     ${p.recommendedOpeningMove ? `
     <div class="card elev-sm" style="padding:var(--space-4);gap:6px;border:1px solid var(--color-accent)">
       <span class="card-kicker"><i class="ph-bold ph-flag-pennant"></i> Recommended opening move</span>
       <p class="plan-opening-move" contenteditable="true" style="margin:0;font-size:13.5px;opacity:0.9">${esc(p.recommendedOpeningMove)}</p>
+    </div>` : ''}
+    ${p.whereExposed && p.whereExposed.length ? `
+    <div class="card elev-sm" style="padding:var(--space-4);gap:6px">
+      <span class="card-kicker"><i class="ph-bold ph-shield-warning"></i> Where I'm exposed</span>
+      ${p.whereExposed.map((w,wi)=>`
+        <div class="plan-bullet">
+          <span class="dot">&#9679;</span>
+          <li contenteditable="true" data-wi="${wi}" class="exposed-item">${esc(w)}</li>
+        </div>
+      `).join('')}
     </div>` : ''}
     <div style="display:flex;justify-content:space-between;gap:12px">
       <button class="btn btn-secondary" id="btn-back-setup">&larr; Back to setup</button>
@@ -721,8 +771,9 @@ function renderLive(){
         ${!a.planCollapsed ? (a.plan.sections||[]).map(s=>`
           <div style="margin-top:6px">
             <span class="card-kicker">${esc(s.title)}</span>
-            ${s.summary ? `<p class="text-muted" style="margin:3px 0 0;font-size:12.5px;font-style:italic">${esc(s.summary)}</p>` : ''}
+            ${(s.analysis || s.summary) ? `<p class="text-muted" style="margin:3px 0 0;font-size:12.5px;font-style:italic">${esc(s.analysis || s.summary)}</p>` : ''}
             ${(s.bullets||[]).map(b=>`<p class="text-muted" style="margin:3px 0 0;font-size:13px">&#8226; ${esc(b)}</p>`).join('')}
+            ${s.script ? `<p class="text-muted" style="margin:3px 0 0;font-size:12.5px">&ldquo;${esc(s.script)}&rdquo;</p>` : ''}
           </div>
         `).join('') : ''}
         ${!a.planCollapsed && a.plan.recommendedOpeningMove ? `
@@ -853,17 +904,29 @@ function renderDetail(){
       <div style="display:flex;flex-direction:column;gap:14px">
         <div class="card elev-sm" style="padding:var(--space-4);gap:8px">
           <h5 style="margin:0">The plan used</h5>
+          ${at.plan && at.plan.context ? `
+            <div style="margin-top:6px">
+              <span class="card-kicker">Context</span>
+              <p class="text-muted plan-context" style="margin:3px 0 0;font-size:12.5px">${esc(at.plan.context)}</p>
+            </div>` : ''}
           ${(at.plan && at.plan.sections || []).map(s=>`
             <div style="margin-top:6px">
               <span class="card-kicker">${esc(s.title)}</span>
-              ${s.summary ? `<p class="text-muted" style="margin:3px 0 0;font-size:12.5px;font-style:italic">${esc(s.summary)}</p>` : ''}
+              ${(s.analysis || s.summary) ? `<p class="text-muted" style="margin:3px 0 0;font-size:12.5px;font-style:italic">${esc(s.analysis || s.summary)}</p>` : ''}
               ${(s.bullets||[]).map(b=>`<p class="text-muted" style="margin:3px 0 0;font-size:13px">&#8226; ${esc(b)}</p>`).join('')}
+              ${s.script ? `<p class="text-muted" style="margin:3px 0 0;font-size:12.5px">&ldquo;${esc(s.script)}&rdquo;</p>` : ''}
+              ${s.risk ? `<p style="margin:3px 0 0;font-size:12px;color:oklch(78% 0.09 78)"><i class="ph-bold ph-warning"></i> ${esc(s.risk)}</p>` : ''}
             </div>
           `).join('')}
           ${at.plan && at.plan.recommendedOpeningMove ? `
             <div style="margin-top:6px">
               <span class="card-kicker">Recommended opening move</span>
               <p class="text-muted" style="margin:3px 0 0;font-size:13px">${esc(at.plan.recommendedOpeningMove)}</p>
+            </div>` : ''}
+          ${at.plan && at.plan.whereExposed && at.plan.whereExposed.length ? `
+            <div style="margin-top:6px">
+              <span class="card-kicker">Where I'm exposed</span>
+              ${at.plan.whereExposed.map(w=>`<p class="text-muted" style="margin:3px 0 0;font-size:13px">&#8226; ${esc(w)}</p>`).join('')}
             </div>` : ''}
         </div>
         <div class="card elev-sm" style="padding:var(--space-4);gap:8px">
@@ -1013,23 +1076,52 @@ function attachHandlers(){
         if(!el) return;
         el.value = options[Math.floor(Math.random() * options.length)].id;
       };
+      const pickText = (strings, elId)=>{
+        const el = document.getElementById(elId);
+        if(!el) return;
+        el.value = strings[Math.floor(Math.random() * strings.length)];
+      };
       pick(COMPANY_SIZES, 'f-company-size');
       pick(YEARS_EXPERIENCE, 'f-years-exp');
       pick(COMPANY_CULTURES, 'f-company-culture');
+      pickText(BATNA_EXAMPLES, 'f-batna');
+      pickText(TIMELINE_EXAMPLES, 'f-timeline');
     };
   }
   if(VIEW==='plan'){
-    document.querySelectorAll('.plan-bullet li[contenteditable]').forEach(li=>{
+    document.querySelectorAll('.plan-bullet li[contenteditable]:not(.exposed-item)').forEach(li=>{
       li.addEventListener('blur', ()=>{
         const si = +li.getAttribute('data-si'), bi = +li.getAttribute('data-bi');
         draft.plan.sections[si].bullets[bi] = li.textContent;
       });
     });
+    document.querySelectorAll('.exposed-item[contenteditable]').forEach(li=>{
+      li.addEventListener('blur', ()=>{
+        const wi = +li.getAttribute('data-wi');
+        draft.plan.whereExposed[wi] = li.textContent;
+      });
+    });
     document.querySelectorAll('.plan-summary[contenteditable]').forEach(el=>{
       el.addEventListener('blur', ()=>{
         const si = +el.getAttribute('data-si');
-        draft.plan.sections[si].summary = el.textContent;
+        draft.plan.sections[si].analysis = el.textContent;
       });
+    });
+    document.querySelectorAll('.plan-script span[contenteditable]').forEach(el=>{
+      el.addEventListener('blur', ()=>{
+        const si = +el.getAttribute('data-si');
+        draft.plan.sections[si].script = el.textContent;
+      });
+    });
+    document.querySelectorAll('.plan-risk span[contenteditable]').forEach(el=>{
+      el.addEventListener('blur', ()=>{
+        const si = +el.getAttribute('data-si');
+        draft.plan.sections[si].risk = el.textContent;
+      });
+    });
+    const contextEl = document.querySelector('.plan-context[contenteditable]');
+    if(contextEl) contextEl.addEventListener('blur', ()=>{
+      draft.plan.context = contextEl.textContent;
     });
     const openingMoveEl = document.querySelector('.plan-opening-move[contenteditable]');
     if(openingMoveEl) openingMoveEl.addEventListener('blur', ()=>{
@@ -1120,7 +1212,7 @@ function attachHandlers(){
 function reuseScenario(scId){
   const sc = DATA.scenarios.find(s=>s.id===scId);
   if(!sc) return;
-  draft = { prefill: { name: sc.name, title: sc.title, goal: sc.goal, mgrName: sc.mgrName, mgrDisp: sc.mgrDisp, companySize: sc.companySize, yearsExperience: sc.yearsExperience, companyCulture: sc.companyCulture }, concepts: [], existingScenarioId: sc.id };
+  draft = { prefill: { name: sc.name, title: sc.title, goal: sc.goal, mgrName: sc.mgrName, mgrDisp: sc.mgrDisp, companySize: sc.companySize, yearsExperience: sc.yearsExperience, companyCulture: sc.companyCulture, batna: sc.batna, timeline: sc.timeline }, concepts: [], existingScenarioId: sc.id };
   VIEW = 'setup';
   render();
 }
@@ -1129,7 +1221,7 @@ function resumeAttempt(at){
   const sc = DATA.scenarios.find(s=>s.id===at.scenarioId);
   if(!sc) return;
   draft = {
-    prefill: { name: sc.name, title: sc.title, goal: sc.goal, mgrName: sc.mgrName, mgrDisp: sc.mgrDisp, companySize: sc.companySize, yearsExperience: sc.yearsExperience, companyCulture: sc.companyCulture },
+    prefill: { name: sc.name, title: sc.title, goal: sc.goal, mgrName: sc.mgrName, mgrDisp: sc.mgrDisp, companySize: sc.companySize, yearsExperience: sc.yearsExperience, companyCulture: sc.companyCulture, batna: sc.batna, timeline: sc.timeline },
     framework: at.framework, concepts: at.concepts || [],
     existingScenarioId: sc.id, scenarioId: sc.id, attemptId: at.id,
     plan: at.plan, transcript: at.transcript || [], summaryTags: at.summaryTags || [],
@@ -1148,11 +1240,13 @@ async function onBuildPlan(){
   const companySize = document.getElementById('f-company-size').value;
   const yearsExperience = document.getElementById('f-years-exp').value;
   const companyCulture = document.getElementById('f-company-culture').value;
+  const batna = document.getElementById('f-batna').value.trim();
+  const timeline = document.getElementById('f-timeline').value.trim();
   const framework = 'seven';
   const concepts = (draft && draft.concepts) ? draft.concepts : [];
   if(!name || !title || !goal) return;
 
-  const prefill = { name, title, goal, mgrName, mgrDisp, companySize, yearsExperience, companyCulture };
+  const prefill = { name, title, goal, mgrName, mgrDisp, companySize, yearsExperience, companyCulture, batna, timeline };
   const existingScenarioId = draft ? draft.existingScenarioId : null;
   draft = { prefill, framework, concepts, existingScenarioId };
 
@@ -1180,51 +1274,85 @@ async function onRegeneratePlan(){
 // competing ones.
 async function generatePlan(prefill, framework, concepts){
   const lengthNote = RESPONSE_DETAIL === 'detailed'
-    ? ' In detailed mode, stretch further: summaries can run 3-4 sentences and bullets can include an extra layer of nuance or a specific example line the person could actually say.'
-    : ' In concise mode, keep summaries to 2-3 sentences and bullets tight — still substantive, just economical.';
-  const system = `You are implementing a negotiation plan based on context that was already established in a prior step (see CONTEXT in the user message). Do not re-derive or question the context — treat it as given input.
+    ? ' In detailed mode, stretch further: analyses can run to 4 sentences, use the full 5 bullets, and scripts can run to 2-3 sentences.'
+    : ' In concise mode, keep analyses to 2-3 sentences and use 3 bullets — still substantive, just economical.';
+  const system = `You are refining a negotiation plan based on context established in a previous step (see CONTEXT in the user message). Treat the CONTEXT as ground truth — do not question it. If it's thin, make it more robust yourself: reasonably flesh it out rather than leaving gaps, and flag anything you added as "[Assumption: ...]".
 
-Build a complete negotiation plan structured around the 7 Elements of Negotiation (Harvard PON framework): Interests, Legitimacy, Relationships, Alternatives (BATNA/WATNA), Options, Commitments, Communication. Produce exactly these 7 sections, in this order. Every section must be concrete and actionable, grounded specifically in the CONTEXT given — never generic advice that could apply to any negotiation.
+This is prep for an actual upcoming conversation, not a generic explainer — every section must be specific enough to use as a script, grounded in the real details given, never generic negotiation advice that could apply to anyone.
 
-Output ONLY valid JSON, no preamble, no markdown fences, matching exactly this schema: {"sections":[{"title":string,"summary":string,"bullets":[string,...]}],"recommendedOpeningMove":string}. Under each section: "summary" is a short paragraph capturing the overall approach for that element, and "bullets" is 3-4 specifics that back it up. "recommendedOpeningMove" is one paragraph, written after all 7 sections, that ties them together into a concrete recommended way to open the actual conversation.
+Output ONLY valid JSON, no preamble, no markdown fences, matching exactly this schema:
+{"context":string,"sections":[{"title":string,"analysis":string,"bullets":[string,...],"script":string,"risk":string}],"recommendedOpeningMove":string,"whereExposed":[string,...]}
 
-If a critical piece of context is missing to complete an element, do not stop or ask — make the most reasonable assumption and flag it inline as "[Assumption: ...]" within the relevant bullet or summary.${lengthNote}`;
+- "context": a robust restatement of the situation, roughly 10-15 short lines (separate with \\n), covering who's involved, the ask, constraints, and anything else load-bearing. If the given input is thin, flesh it out with reasonable, clearly-useful specifics rather than leaving it sparse.
+- "sections": produce exactly 7, titled in this order: "Interests", "Legitimacy", "Relationships", "Alternatives (BATNA/WATNA)", "Options", "Commitments", "Communication". For each: "analysis" reasons from the context (the "why", not just the label); "bullets" are concrete specifics tied to the actual situation, role, manager, and numbers given; "script" is at least one ready-to-use sentence or two, written as the literal bare words to say out loud, with NO surrounding quotation marks (the display already adds them — quoting a quote inside another quote is a mistake to avoid); "risk" is one specific failure mode for that element and how to avoid it.
+- "recommendedOpeningMove": a literal script — the actual first 2-3 sentences to say, not a paraphrase or description. This one SHOULD be wrapped in its own quotation marks, since it's shown plain with no added quote styling.
+- "whereExposed": 2-3 bullets naming the weakest parts of this specific plan given what's known, and what to firm up before the conversation.
 
-  const userMsg = `CONTEXT (already established in a prior step — treat as given, do not question or re-derive):
+Where critical information is missing (a real BATNA, the manager's likely constraints, market data, timeline) and it wasn't supplied in CONTEXT, do not silently invent specifics as if they were given — instead make the gap explicit with "[Assumption: ...]" at the point it's used, so it reads as a flagged gap, not a fabricated fact.${lengthNote}`;
+
+  const userMsg = `CONTEXT (from a previous step — treat as ground truth):
 - My name / title: ${prefill.name}, ${prefill.title}
 - Goal of the ask: ${prefill.goal}
 - Counterparty (manager): ${prefill.mgrName || 'unspecified'}, disposition: ${prefill.mgrDisp || 'unspecified'}
 - Company size: ${prefill.companySize ? companySizeLabel(prefill.companySize) : 'unspecified'}
 - Company culture: ${prefill.companyCulture ? companyCultureLabel(prefill.companyCulture) : 'unspecified'}
 - My experience level: ${prefill.yearsExperience ? yearsExperienceLabel(prefill.yearsExperience) : 'unspecified'}
+- My BATNA / best alternative: ${prefill.batna || 'not supplied'}
+- Timeline: ${prefill.timeline || 'not supplied'}
 - Concepts to stress-test in the plan where relevant: ${concepts.length ? concepts.join(', ') : 'none specified'}
 
 TASK:
-Build out a complete negotiation plan structured around the 7 Elements of Negotiation. For each element, produce concrete, actionable content grounded in the CONTEXT above — not generic advice.
+Rewrite and deepen this into a full negotiation plan using the 7 Elements of Negotiation (Harvard PON framework).
 
-1. Interests — Identify the underlying interests (not stated positions) for both my side and the counterparty. Distinguish stated positions from the "why" behind them.
-2. Legitimacy — List objective criteria, precedents, benchmarks, or standards that can be used to justify proposals as fair (market data, comparable deals, policies, etc.).
-3. Relationships — Assess the current and desired state of the relationship with the counterparty. Note any relationship risks and how the plan should manage tone/trust throughout the negotiation.
-4. Alternatives (BATNA/WATNA) — Define my BATNA and, as best as can be inferred, the counterparty's BATNA. State my reservation point and estimate the ZOPA if enough info exists.
-5. Options — Generate a set of possible deal structures/trade-offs (not just one ask), including at least one creative/integrative option that expands value rather than just splitting it.
-6. Commitments — Draft what a realistic, implementable agreement would look like — specific, time-bound commitments each side could actually deliver on.
-7. Communication — Outline the communication plan: sequencing, framing/anchoring approach, key messages, and how to handle likely objections.
+1. Interests — Go at least two layers deep: surface ask → what that ask is really about for me → what that reveals about my manager's constraints and interests too. Don't stop at "recognition" — get specific to what's actually driving it.
+2. Legitimacy — Name the specific external references I could realistically bring (market data sources, internal comp bands, timing/precedent, scope changes) — not just "cite market data."
+3. Relationships — Map the specific dynamic with this manager (style, pressures, history, from the disposition given) and how that should shape tone and sequencing, not generic "protect the relationship" advice.
+4. Alternatives (BATNA/WATNA) — Use my supplied BATNA if given; if not supplied, do not invent one — flag it as a gap I need to fill myself. Reason through the manager's likely BATNA/cost of my walking away, specific to my role.
+5. Options — A ranked package of at least 4 options (not just base/title/bonus), including at least one multi-part MESO-style package: 2-3 different full packages I'd be equally happy with, so I'm not negotiating on a single axis.
+6. Commitments — The actual close: what to say to get a concrete next step, plus a fallback script if they stall.
+7. Communication — A full sequencing plan (opening line → discovery questions → anchor → response to pushback), with at least 2 likely objections and a scripted response to each, folded into the analysis/bullets/script fields.
 
 Return only the JSON object.`;
   const result = await askAI(system, [{role:'user', content:userMsg}], true);
   if(result && Array.isArray(result.sections) && result.sections.length) return result;
+  return fallbackPlan(prefill);
+}
+
+function fallbackPlan(prefill){
   const goal = (prefill.goal || 'a raise').replace(/\.+\s*$/, '');
+  const mgrName = prefill.mgrName || 'your manager';
+  const batnaLine = prefill.batna
+    ? `Your stated alternative: ${prefill.batna}.`
+    : '[Assumption: no BATNA was supplied] You have not named a real alternative yet — do this before the conversation, even if you never plan to use it.';
+  const timelineLine = prefill.timeline
+    ? `Timeline: ${prefill.timeline}.`
+    : '[Assumption: no timeline was supplied] No specific timing constraint is known — assume a standard review cycle unless you have reason to move faster.';
   return {
+    context: [
+      `${prefill.name || 'You'} (${prefill.title || 'your role'}) is preparing to ask ${mgrName} for: ${goal}.`,
+      `Manager disposition: ${prefill.mgrDisp || '[Assumption: not supplied] assume moderately firm, budget-conscious, not a pushover.'}`,
+      `Company size: ${prefill.companySize ? companySizeLabel(prefill.companySize) : '[Assumption: not supplied] assume a mid-size company with some but not unlimited budget flexibility.'}`,
+      `Company culture: ${prefill.companyCulture ? companyCultureLabel(prefill.companyCulture) : '[Assumption: not supplied] assume a fairly standard corporate approval process.'}`,
+      `Experience level: ${prefill.yearsExperience ? yearsExperienceLabel(prefill.yearsExperience) : '[Assumption: not supplied] assume solid, established tenure in the role.'}`,
+      batnaLine,
+      timelineLine,
+      'This plan was generated offline (the AI service was unavailable) using only the details above — treat the [Assumption] tags as gaps to fill in yourself before the real conversation.',
+    ].join('\n'),
     sections: [
-      { title:'Interests', summary:`Look past the number to what ${prefill.name || 'you'} actually need, and what your manager needs too.`, bullets:[`[Assumption: no deeper motivation was given] The underlying driver is likely recognition for unrewarded scope — name that directly, not just "${goal}".`, `Your manager's interest is probably protecting budget precedent and their own credibility with their boss — plan around that, not against it.`] },
-      { title:'Legitimacy', summary:'Bring an external reference point so the ask reads as fair, not personal.', bullets:['Cite market-rate data for the role/level, if you have or can find it.', 'Point to the specific scope or impact you have absorbed since the last comp change.'] },
-      { title:'Relationships', summary:'Protect the working relationship regardless of the outcome — this is a repeated game.', bullets:['Frame the ask as solving a shared problem, not a demand against your manager.', 'Watch for tension between pushing your case and preserving trust; de-escalate if the tone shifts.'] },
-      { title:'Alternatives (BATNA/WATNA)', summary:'Know your walk-away, and plan for theirs.', bullets:['[Assumption: no alternative was given] Identify one specific, real alternative (another offer, internal move, or market option) before the conversation — never reveal it or any timeline.', "The manager's likely BATNA is doing nothing and absorbing the risk you might disengage or leave — weigh how much that costs them."] },
-      { title:'Options', summary:'Have more than one way to get to yes.', bullets:['Base comp increase as the primary ask.', 'Title or scope change as an alternate or additional lever.', 'A creative option: earlier review date, one-time bonus, or flexible terms in exchange for a smaller base increase now.'] },
-      { title:'Commitments', summary:'Leave with something concrete, not just a promise to "look into it".', bullets:['Ask for a specific decision date, not an open-ended "let me think".', 'Propose a fallback commitment (e.g. a scheduled follow-up) if the full ask can\'t be met today.'] },
-      { title:'Communication', summary:"Sequence the conversation so you understand their constraints before you anchor.", bullets:['Open by asking about their constraints before stating your number, to avoid anchoring against yourself.', 'Prepare a calm response to the most likely objection: "there\'s no budget right now."'] },
+      { title:'Interests', analysis:`Look past the number to what ${prefill.name || 'you'} actually need, and what that reveals about your manager's own constraints.`, bullets:[`[Assumption: no deeper motivation was given] The underlying driver is likely recognition for unrewarded scope — name that directly, not just "${goal}".`, `Your manager's interest is probably protecting budget precedent and their own credibility with their boss.`, 'Distinguish the stated ask from the real "why" when you speak, so the conversation isn\'t just about the number.'], script:`This isn't just about the number for me — it's about ${goal.toLowerCase()} being recognized as a real step up in scope.`, risk:'Leading with the number instead of the reason makes it easy to say no. Lead with the "why."' },
+      { title:'Legitimacy', analysis:'Bring an external reference point so the ask reads as fair and non-negotiable-on-principle, not personal.', bullets:['Cite market-rate data for the role/level, if you have or can find it.', 'Point to the specific scope or impact you have absorbed since the last comp change.', 'Reference internal comp bands or precedent if you know of any comparable case.'], script:`Based on what similar roles are paying and the scope I've picked up, this feels like a fair, defensible ask.`, risk:'An ask with no external anchor reads as opinion, not fact — always have at least one reference point ready.' },
+      { title:'Relationships', analysis:`Protect the working relationship with ${mgrName} regardless of outcome — this is a repeated game, not a one-shot.`, bullets:['Frame the ask as solving a shared problem, not a demand against your manager.', 'Watch for tension between pushing your case and preserving trust; de-escalate if the tone shifts.', '[Assumption: limited relationship history given] Calibrate tone to their disposition rather than assuming familiarity.'], script:`I want this to work well for both of us — I'm not trying to put you in a hard spot.`, risk:'Pushing too hard too fast can read as adversarial. Sequence firmness after rapport, not before.' },
+      { title:'Alternatives (BATNA/WATNA)', analysis:'Know your walk-away, and reason through theirs — never reveal either directly.', bullets:[batnaLine, "The manager's likely BATNA is doing nothing and absorbing the risk you might disengage or leave — weigh how much that actually costs them.", 'Never state your BATNA or any timeline explicitly during the conversation.'], script:`I have options I'm considering, but I'd genuinely rather make this work here.`, risk:'Revealing your BATNA or a deadline hands over your leverage. Keep it implied, never stated.' },
+      { title:'Options', analysis:'Have more than one way to get to yes, including at least one creative package, so you\'re not negotiating on a single axis.', bullets:['Base comp increase as the primary ask.', 'Title or scope change as an alternate or additional lever.', 'A creative package: earlier review date + smaller base bump, in exchange for locking in the title change now.', 'A third package: flexible/remote terms plus a modest increase, if base budget is the real constraint.'], script:`There's more than one way to get me to yes here — happy to talk through what's actually flexible on your end.`, risk:'Anchoring on a single number turns this into a win/lose haggle. Bring packages, not just a figure.' },
+      { title:'Commitments', analysis:'Leave with something concrete, not just a promise to "look into it".', bullets:['Ask for a specific decision date, not an open-ended "let me think".', 'Propose a fallback commitment (e.g. a scheduled follow-up) if the full ask can\'t be met today.', 'Get agreement in writing (a follow-up email) once you have a verbal yes.'], script:`Can we agree on a specific date to close this out, even if the answer needs more time?`, risk:'Walking away with no next step lets the ask quietly die. Always close with a date.' },
+      { title:'Communication', analysis:'Sequence the conversation so you understand their constraints before you anchor, and have objection responses ready.', bullets:['Open by asking about their constraints before stating your number, to avoid anchoring against yourself.', 'Objection: "there\'s no budget right now" → respond with the timeline/next-cycle option rather than dropping the ask.', 'Objection: "let me check with my manager" → ask for a specific date to hear back, and offer to help make the case.'], script:`Before I lay out what I'm thinking, what constraints are you working with this cycle?`, risk:'Anchoring before you understand their constraints wastes your best information. Ask first.' },
     ],
-    recommendedOpeningMove: `Open by asking ${prefill.mgrName || 'your manager'} what constraints they're working with this cycle, then name the specific scope or impact behind "${goal}" before stating a number — anchoring on your contribution first, your ask second.`
+    recommendedOpeningMove: `"Hi ${mgrName}, do you have a few minutes? Before I get into specifics, I wanted to ask what constraints you're working with this cycle — I want to make sure what I'm proposing actually fits."`,
+    whereExposed: [
+      prefill.batna ? 'Your BATNA is named but its credibility is untested — make sure it would actually hold up if referenced indirectly.' : '[Assumption gap] No real BATNA was supplied — this plan cannot responsibly script your walk-away leverage until you supply one.',
+      'Market data and internal comp bands are assumed, not confirmed — firm these up with real numbers before the conversation if at all possible.',
+      prefill.timeline ? 'Timeline is known but the manager\'s own calendar/budget cycle constraints are still a guess — confirm if you can.' : '[Assumption gap] No timeline was supplied — the sequencing and urgency framing in this plan are generic until you add one.',
+    ],
   };
 }
 
