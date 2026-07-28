@@ -166,6 +166,10 @@
 
   .main-area{ flex:1; min-width:0; overflow-y:auto; }
   .main-area.flush{ height:100vh; overflow:hidden; display:flex; flex-direction:column; }
+  /* #screen is the render target inside .main-area — when flush (Live), it must itself
+     be a flex column that fills the available height, or flex:1/overflow further down
+     (.live-body, .live-sidebar) has no bounded height to size against and can't scroll. */
+  #screen{ display:flex; flex-direction:column; flex:1; min-height:0; }
   .screen{ padding:var(--space-8) 40px 64px; display:flex; flex-direction:column; gap:var(--space-6); }
 
   /* ---- setup ---- */
@@ -1331,7 +1335,6 @@ function fallbackPlan(prefill){
       `${prefill.name || 'You'} bring${prefill.name ? 's' : ''} ${experienceText} to this ask.`,
       batnaLine,
       timelineLine,
-      'This plan was generated offline (the AI service was unavailable). Every line tagged [Assumption] was invented to make the rehearsal realistic and specific rather than generic — swap each one for your real details before an actual conversation.',
     ].join('\n'),
     sections: [
       { title:'Interests', analysis:`Look past the number to what ${prefill.name || 'you'} actually need, and what that reveals about your manager's own constraints.`, bullets:[`[Assumption: no deeper motivation was given] The underlying driver is likely recognition for unrewarded scope — name that directly, not just "${goal}".`, `Your manager's interest is probably protecting budget precedent and their own credibility with their boss.`, 'Distinguish the stated ask from the real "why" when you speak, so the conversation isn\'t just about the number.'], script:`This isn't just about the number for me — it's about ${goal.toLowerCase()} being recognized as a real step up in scope.`, risk:'Leading with the number instead of the reason makes it easy to say no. Lead with the "why."' },
