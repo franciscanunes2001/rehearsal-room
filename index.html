@@ -643,6 +643,7 @@ function renderPlan(){
     ${(p.sections||[]).map((s,si)=>`
       <div class="card elev-sm plan-section">
         <span class="card-kicker">${esc(s.title)}</span>
+        ${s.summary ? `<p class="plan-summary" contenteditable="true" data-si="${si}" style="margin:0;font-size:13.5px;opacity:0.9">${esc(s.summary)}</p>` : ''}
         ${(s.bullets||[]).map((b,bi)=>`
           <div class="plan-bullet">
             <span class="dot">&#9679;</span>
@@ -651,11 +652,11 @@ function renderPlan(){
         `).join('')}
       </div>
     `).join('')}
-    <div class="card elev-sm" style="padding:var(--space-4);gap:6px">
-      <span class="card-kicker"><i class="ph-bold ph-lightbulb-filament"></i> Tip</span>
-      <p style="margin:0;font-size:13px;opacity:0.85">Concessions should feel costly &mdash; trade, don't donate.</p>
-      <p style="margin:0;font-size:13px;opacity:0.85">Decreasing concession size signals your limit is near.</p>
-    </div>
+    ${p.recommendedOpeningMove ? `
+    <div class="card elev-sm" style="padding:var(--space-4);gap:6px;border:1px solid var(--color-accent)">
+      <span class="card-kicker"><i class="ph-bold ph-flag-pennant"></i> Recommended opening move</span>
+      <p class="plan-opening-move" contenteditable="true" style="margin:0;font-size:13.5px;opacity:0.9">${esc(p.recommendedOpeningMove)}</p>
+    </div>` : ''}
     <div style="display:flex;justify-content:space-between;gap:12px">
       <button class="btn btn-secondary" id="btn-back-setup">&larr; Back to setup</button>
       <button class="btn btn-primary" id="btn-start-negotiation" style="font-size:14.5px;padding:12px 22px">Start negotiation <i class="ph-bold ph-arrow-right"></i></button>
@@ -720,9 +721,15 @@ function renderLive(){
         ${!a.planCollapsed ? (a.plan.sections||[]).map(s=>`
           <div style="margin-top:6px">
             <span class="card-kicker">${esc(s.title)}</span>
+            ${s.summary ? `<p class="text-muted" style="margin:3px 0 0;font-size:12.5px;font-style:italic">${esc(s.summary)}</p>` : ''}
             ${(s.bullets||[]).map(b=>`<p class="text-muted" style="margin:3px 0 0;font-size:13px">&#8226; ${esc(b)}</p>`).join('')}
           </div>
         `).join('') : ''}
+        ${!a.planCollapsed && a.plan.recommendedOpeningMove ? `
+          <div style="margin-top:6px">
+            <span class="card-kicker">Recommended opening move</span>
+            <p class="text-muted" style="margin:3px 0 0;font-size:13px">${esc(a.plan.recommendedOpeningMove)}</p>
+          </div>` : ''}
       </div>
 
       <div class="card elev-sm" style="padding:var(--space-4);gap:8px">
@@ -849,9 +856,15 @@ function renderDetail(){
           ${(at.plan && at.plan.sections || []).map(s=>`
             <div style="margin-top:6px">
               <span class="card-kicker">${esc(s.title)}</span>
+              ${s.summary ? `<p class="text-muted" style="margin:3px 0 0;font-size:12.5px;font-style:italic">${esc(s.summary)}</p>` : ''}
               ${(s.bullets||[]).map(b=>`<p class="text-muted" style="margin:3px 0 0;font-size:13px">&#8226; ${esc(b)}</p>`).join('')}
             </div>
           `).join('')}
+          ${at.plan && at.plan.recommendedOpeningMove ? `
+            <div style="margin-top:6px">
+              <span class="card-kicker">Recommended opening move</span>
+              <p class="text-muted" style="margin:3px 0 0;font-size:13px">${esc(at.plan.recommendedOpeningMove)}</p>
+            </div>` : ''}
         </div>
         <div class="card elev-sm" style="padding:var(--space-4);gap:8px">
           <h5 style="margin:0">Summary</h5>
@@ -1012,6 +1025,16 @@ function attachHandlers(){
         draft.plan.sections[si].bullets[bi] = li.textContent;
       });
     });
+    document.querySelectorAll('.plan-summary[contenteditable]').forEach(el=>{
+      el.addEventListener('blur', ()=>{
+        const si = +el.getAttribute('data-si');
+        draft.plan.sections[si].summary = el.textContent;
+      });
+    });
+    const openingMoveEl = document.querySelector('.plan-opening-move[contenteditable]');
+    if(openingMoveEl) openingMoveEl.addEventListener('blur', ()=>{
+      draft.plan.recommendedOpeningMove = openingMoveEl.textContent;
+    });
     const backBtn = document.getElementById('btn-back-setup');
     if(backBtn) backBtn.onclick = ()=>{ VIEW='setup'; render(); };
     const startBtn = document.getElementById('btn-start-negotiation');
@@ -1155,85 +1178,53 @@ async function onRegeneratePlan(){
 // with the universal Context/Target/BATNA lines into a single ordered list, so the
 // model only ever sees one "produce exactly N sections" instruction, never two
 // competing ones.
-function frameworkSectionLines(framework){
-  switch(framework){
-    case 'seven': return [
-      '"Interests" — 2-3 bullets on the real underlying needs behind the ask (recognition, growth, fairness, workload — not just the number), specific to this person\'s situation',
-      '"Legitimacy" — 2-3 bullets on external reference points that make the ask credible: market data, scope comparisons, tenure, measurable impact, or company norms',
-      '"Relationships" — 2-3 bullets on how to frame this as a shared problem with the manager and protect the working relationship regardless of the outcome',
-      '"Alternatives (BATNA)" — 2-3 bullets: a specific, plausible walk-away alternative and how to protect it without revealing it or any time pressure during the conversation',
-      '"Options" — 2-3 bullets on concrete ways to create value beyond base pay (title, scope, timing, benefits, flexibility) that could be traded',
-      '"Commitments" — 2-3 bullets on what a good outcome should commit both sides to, including a concrete next step and date',
-      '"Communication" — 2-3 bullets on how to structure the conversation itself (what to ask before asserting, how to read the room, how to adapt to this manager\'s specific disposition)',
-    ];
-    case 'core': return [
-      '"Appreciation" — exactly 1 bullet giving a concrete phrase or move for this ask',
-      '"Affiliation" — exactly 1 bullet',
-      '"Autonomy" — exactly 1 bullet',
-      '"Status" — exactly 1 bullet',
-      '"Role" — exactly 1 bullet',
-    ];
-    case 'anchor': return [
-      '"Opening anchor" — exactly 1 bullet with a suggested number or range',
-      '"Legitimacy points" — 2-3 bullets: market comps, scope, timing — each credible and specific',
-    ];
-    case 'multi': return [
-      '"Variables in play" — 4-5 bullets, each naming a variable beyond price (timing, scope, title, review cycle, remote/flex terms, etc.) with a one-line note',
-    ];
-    default: return [
-      '"Interests" — 2-3 bullets on the real why behind the ask, not just the number',
-      '"BATNA" — 2-3 bullets on the walk-away alternative and how to protect it — never reveal it, never reveal time pressure',
-    ];
-  }
-}
-
-// 'seven' and 'two'/default already produce their own BATNA/Alternatives section —
-// the rest need one appended so every plan ends with a concrete walk-away.
-function frameworkHasOwnBatna(framework){
-  return framework === 'seven' || framework === 'two' || !framework;
-}
-
 async function generatePlan(prefill, framework, concepts){
   const lengthNote = RESPONSE_DETAIL === 'detailed'
-    ? ' In detailed mode, stretch further: 3-4 sentences per bullet, with extra nuance, a specific example line the person could actually say, and the reasoning behind the move.'
-    : ' In concise mode, keep each bullet to 2-3 sentences — still a real explanation, just economical.';
-  const system = `You are a sharp negotiation coach helping someone prep for a real conversation asking their manager for a raise. Output ONLY valid JSON, no preamble, no markdown fences. Format exactly: {"sections":[{"title":"...","bullets":["...","..."]}]}. This must be a genuinely comprehensive prep document, not a cheat sheet — every bullet needs real substance: state the concrete move or fact AND the reasoning or a specific example phrase behind it, in full sentences (not a clipped phrase or fragment). Tailor everything tightly to the specifics given, including company size/culture and experience level where provided — reference them directly rather than writing generic advice that could apply to anyone. Never write generic filler like "know your BATNA" or "have a number in mind" — every Target and BATNA bullet must state or clearly imply an actual figure, range, or specific alternative grounded in the context given, inventing a plausible concrete one if the input doesn't supply it.${lengthNote}`;
+    ? ' In detailed mode, stretch further: summaries can run 3-4 sentences and bullets can include an extra layer of nuance or a specific example line the person could actually say.'
+    : ' In concise mode, keep summaries to 2-3 sentences and bullets tight — still substantive, just economical.';
+  const system = `You are implementing a negotiation plan based on context that was already established in a prior step (see CONTEXT in the user message). Do not re-derive or question the context — treat it as given input.
 
-  const sectionLines = [
-    '"Context" — exactly 1 bullet that plainly restates the situation in one read: who\'s asking, at roughly what kind of company, with what experience, for what',
-    '"Target" — exactly 2 bullets: a concrete opening number or range to ask for (a real figure derived from the goal, not vague), and the walk-away floor — the minimum outcome that still counts as a win',
-    ...frameworkSectionLines(framework),
-  ];
-  if(!frameworkHasOwnBatna(framework)){
-    sectionLines.push('"BATNA" — exactly 2 bullets: a specific, plausible walk-away alternative (a real competing offer, an internal move, or a concrete market alternative — not just "other options exist"), and how to protect it without revealing it or any time pressure during the conversation');
-  }
+Build a complete negotiation plan structured around the 7 Elements of Negotiation (Harvard PON framework): Interests, Legitimacy, Relationships, Alternatives (BATNA/WATNA), Options, Commitments, Communication. Produce exactly these 7 sections, in this order. Every section must be concrete and actionable, grounded specifically in the CONTEXT given — never generic advice that could apply to any negotiation.
 
-  const userMsg = `Person: ${prefill.name}, ${prefill.title}.
-Goal of the raise ask: ${prefill.goal}
-Counterpart: ${prefill.mgrName || 'unspecified manager'}, disposition: ${prefill.mgrDisp || 'unspecified'}
-${prefill.companySize ? 'Company size: ' + companySizeLabel(prefill.companySize) : ''}
-${prefill.yearsExperience ? 'Employee experience level: ' + yearsExperienceLabel(prefill.yearsExperience) : ''}
-${prefill.companyCulture ? 'Company culture: ' + companyCultureLabel(prefill.companyCulture) : ''}
-${concepts.length ? 'Concepts to stress-test in the bullets where relevant: ' + concepts.join(', ') : ''}
+Output ONLY valid JSON, no preamble, no markdown fences, matching exactly this schema: {"sections":[{"title":string,"summary":string,"bullets":[string,...]}],"recommendedOpeningMove":string}. Under each section: "summary" is a short paragraph capturing the overall approach for that element, and "bullets" is 3-4 specifics that back it up. "recommendedOpeningMove" is one paragraph, written after all 7 sections, that ties them together into a concrete recommended way to open the actual conversation.
 
-Produce exactly these ${sectionLines.length} sections, in this exact order:
-${sectionLines.map((line, i) => `${i + 1}. ${line}.`).join('\n')}
+If a critical piece of context is missing to complete an element, do not stop or ask — make the most reasonable assumption and flag it inline as "[Assumption: ...]" within the relevant bullet or summary.${lengthNote}`;
+
+  const userMsg = `CONTEXT (already established in a prior step — treat as given, do not question or re-derive):
+- My name / title: ${prefill.name}, ${prefill.title}
+- Goal of the ask: ${prefill.goal}
+- Counterparty (manager): ${prefill.mgrName || 'unspecified'}, disposition: ${prefill.mgrDisp || 'unspecified'}
+- Company size: ${prefill.companySize ? companySizeLabel(prefill.companySize) : 'unspecified'}
+- Company culture: ${prefill.companyCulture ? companyCultureLabel(prefill.companyCulture) : 'unspecified'}
+- My experience level: ${prefill.yearsExperience ? yearsExperienceLabel(prefill.yearsExperience) : 'unspecified'}
+- Concepts to stress-test in the plan where relevant: ${concepts.length ? concepts.join(', ') : 'none specified'}
+
+TASK:
+Build out a complete negotiation plan structured around the 7 Elements of Negotiation. For each element, produce concrete, actionable content grounded in the CONTEXT above — not generic advice.
+
+1. Interests — Identify the underlying interests (not stated positions) for both my side and the counterparty. Distinguish stated positions from the "why" behind them.
+2. Legitimacy — List objective criteria, precedents, benchmarks, or standards that can be used to justify proposals as fair (market data, comparable deals, policies, etc.).
+3. Relationships — Assess the current and desired state of the relationship with the counterparty. Note any relationship risks and how the plan should manage tone/trust throughout the negotiation.
+4. Alternatives (BATNA/WATNA) — Define my BATNA and, as best as can be inferred, the counterparty's BATNA. State my reservation point and estimate the ZOPA if enough info exists.
+5. Options — Generate a set of possible deal structures/trade-offs (not just one ask), including at least one creative/integrative option that expands value rather than just splitting it.
+6. Commitments — Draft what a realistic, implementable agreement would look like — specific, time-bound commitments each side could actually deliver on.
+7. Communication — Outline the communication plan: sequencing, framing/anchoring approach, key messages, and how to handle likely objections.
 
 Return only the JSON object.`;
   const result = await askAI(system, [{role:'user', content:userMsg}], true);
-  if(result && result.sections) return result;
+  if(result && Array.isArray(result.sections) && result.sections.length) return result;
+  const goal = (prefill.goal || 'a raise').replace(/\.+\s*$/, '');
   return {
     sections: [
-      { title:'Context', bullets:[`${prefill.name || 'You'} (${prefill.title || 'your role'}) preparing to ask: ${(prefill.goal || 'a raise').replace(/\.+\s*$/, '')}.`] },
-      { title:'Target', bullets:['Decide a concrete opening number or range before the conversation — not just "more".', 'Set a walk-away floor: the minimum outcome you would still accept.'] },
-      { title:'Interests', bullets:['Clarify what outcome matters most beyond the number — recognition, growth, fairness, or workload relief.'] },
-      { title:'Legitimacy', bullets:['Bring an external reference point — market data, a scope comparison, or measurable impact.'] },
-      { title:'Relationships', bullets:['Frame this as solving a shared problem with your manager, not a demand against them.'] },
-      { title:'Alternatives (BATNA)', bullets:['Identify one specific, real alternative (another offer, internal move, or market option) — not just "I could leave".', 'Never reveal this alternative or any timeline during the conversation.'] },
-      { title:'Options', bullets:['Have 2-3 ways to get value beyond base pay ready to float — title, scope, timing, or flexibility.'] },
-      { title:'Commitments', bullets:['Ask for a specific next step and date before the conversation ends.'] },
-      { title:'Communication', bullets:['Ask more than you assert early on, to surface their real constraints first.'] },
-    ]
+      { title:'Interests', summary:`Look past the number to what ${prefill.name || 'you'} actually need, and what your manager needs too.`, bullets:[`[Assumption: no deeper motivation was given] The underlying driver is likely recognition for unrewarded scope — name that directly, not just "${goal}".`, `Your manager's interest is probably protecting budget precedent and their own credibility with their boss — plan around that, not against it.`] },
+      { title:'Legitimacy', summary:'Bring an external reference point so the ask reads as fair, not personal.', bullets:['Cite market-rate data for the role/level, if you have or can find it.', 'Point to the specific scope or impact you have absorbed since the last comp change.'] },
+      { title:'Relationships', summary:'Protect the working relationship regardless of the outcome — this is a repeated game.', bullets:['Frame the ask as solving a shared problem, not a demand against your manager.', 'Watch for tension between pushing your case and preserving trust; de-escalate if the tone shifts.'] },
+      { title:'Alternatives (BATNA/WATNA)', summary:'Know your walk-away, and plan for theirs.', bullets:['[Assumption: no alternative was given] Identify one specific, real alternative (another offer, internal move, or market option) before the conversation — never reveal it or any timeline.', "The manager's likely BATNA is doing nothing and absorbing the risk you might disengage or leave — weigh how much that costs them."] },
+      { title:'Options', summary:'Have more than one way to get to yes.', bullets:['Base comp increase as the primary ask.', 'Title or scope change as an alternate or additional lever.', 'A creative option: earlier review date, one-time bonus, or flexible terms in exchange for a smaller base increase now.'] },
+      { title:'Commitments', summary:'Leave with something concrete, not just a promise to "look into it".', bullets:['Ask for a specific decision date, not an open-ended "let me think".', 'Propose a fallback commitment (e.g. a scheduled follow-up) if the full ask can\'t be met today.'] },
+      { title:'Communication', summary:"Sequence the conversation so you understand their constraints before you anchor.", bullets:['Open by asking about their constraints before stating your number, to avoid anchoring against yourself.', 'Prepare a calm response to the most likely objection: "there\'s no budget right now."'] },
+    ],
+    recommendedOpeningMove: `Open by asking ${prefill.mgrName || 'your manager'} what constraints they're working with this cycle, then name the specific scope or impact behind "${goal}" before stating a number — anchoring on your contribution first, your ask second.`
   };
 }
 
