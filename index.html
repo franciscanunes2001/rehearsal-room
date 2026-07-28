@@ -647,11 +647,11 @@ function renderPlan(){
     </div>`;
   }
   if(!draft || !draft.plan){
-    return `<div class="screen" style="max-width:1040px">${renderStepper(1)}<p class="text-muted">No plan yet.</p></div>`;
+    return `<div class="screen">${renderStepper(1)}<p class="text-muted">No plan yet.</p></div>`;
   }
   const p = draft.plan;
   return `
-  <div class="screen" style="max-width:1040px">
+  <div class="screen">
     ${renderStepper(1)}
     <div style="display:flex;align-items:flex-end;gap:16px">
       <div style="flex:1">
