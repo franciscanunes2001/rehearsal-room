@@ -169,12 +169,13 @@
   .screen{ padding:var(--space-8) 40px 64px; display:flex; flex-direction:column; gap:var(--space-6); }
 
   /* ---- setup ---- */
-  .concept-panel{
+  .optional-panel{
     background:color-mix(in srgb, var(--color-text) 4%, var(--color-surface)); border:1px solid var(--color-divider);
-    border-radius:var(--radius-md); padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-4);
+    border-radius:var(--radius-md); padding:var(--space-6); display:flex; flex-direction:column; gap:var(--space-4);
   }
-  .chip-group{ display:flex; flex-wrap:wrap; gap:8px; }
-  .chip-toggle{ cursor:pointer; font-size:12.5px; font-weight:600; padding:6px 12px; border:1px solid var(--color-divider); background:transparent; color:color-mix(in srgb, var(--color-text) 65%, transparent); }
+  .setup-columns{ display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4); align-items:start; }
+  @media (max-width:640px){ .setup-columns{ grid-template-columns:1fr; } }
+  .setup-actions{ position:sticky; bottom:0; background:var(--color-bg); padding:var(--space-3) 0 var(--space-2); z-index:5; display:flex; flex-direction:column; gap:8px; }
 
   /* ---- plan ---- */
   .plan-section{ padding:var(--space-4); gap:8px; }
@@ -382,7 +383,6 @@ const FRAMEWORKS = [
   { id: 'multi', label: 'Multi-issue Expansion' },
   { id: 'two', label: '2 Elements (Interests + BATNA)' }
 ];
-const CONCEPTS = ['Anchoring high','Conceding too fast','Single-issue price lock','Revealing urgency'];
 const STEP_LABELS = ['Set the scene', 'Prep plan', 'Practice'];
 
 const COMPANY_SIZES = [
@@ -431,7 +431,6 @@ function companyCultureLabel(id){ const o = COMPANY_CULTURES.find(o=>o.id===id);
 const HUES = { accent:289, indigo:255, blue:228, cyan:200, teal:176, green:142, amber:78, rose:18 };
 function tone(hue){ return { bg:'oklch(30% 0.075 '+hue+')', color:'oklch(92% 0.035 '+hue+')' }; }
 const FRAMEWORK_HUES = { seven:HUES.indigo, core:HUES.teal, anchor:HUES.amber, multi:HUES.cyan, two:HUES.accent };
-const CONCEPT_HUES = { 'Anchoring high':HUES.rose, 'Conceding too fast':HUES.amber, 'Single-issue price lock':HUES.cyan, 'Revealing urgency':HUES.blue };
 const SUMMARY_TYPE_HUES = { anchor:HUES.green, pushback:HUES.rose, term:HUES.blue };
 
 function outcomeHue(status, outcome){
@@ -529,7 +528,6 @@ function renderStepper(activeIndex){
 function renderSetup(){
   const p = draft && draft.prefill ? draft.prefill : {};
   const fwTone = tone(FRAMEWORK_HUES.seven);
-  const concepts = (draft && draft.concepts) || [];
   return `
   <div class="screen" style="max-width:1040px">
     ${renderStepper(0)}
@@ -537,25 +535,27 @@ function renderSetup(){
       <h1>Set the scene</h1>
       <p class="text-muted" style="font-size:14.5px">A few details about you and the ask. The more specific this is, the sharper your plan and your AI manager will be.</p>
     </div>
-    <div class="card elev-sm" style="padding:var(--space-6);gap:var(--space-4)">
-      <span class="card-kicker">The essentials</span>
-      <div class="row2">
-        <div class="field">
-          <label>Your name</label>
-          <input class="input" id="f-name" type="text" value="${esc(p.name||'')}" placeholder="Jordan">
+    <div class="setup-columns">
+      <div class="card elev-sm" style="padding:var(--space-6);gap:var(--space-4)">
+        <span class="card-kicker">The essentials</span>
+        <div class="row2">
+          <div class="field">
+            <label>Your name</label>
+            <input class="input" id="f-name" type="text" value="${esc(p.name||'')}" placeholder="Jordan">
+          </div>
+          <div class="field">
+            <label>Your title</label>
+            <input class="input" id="f-title" type="text" value="${esc(p.title||'')}" placeholder="Senior Product Designer">
+          </div>
         </div>
         <div class="field">
-          <label>Your title</label>
-          <input class="input" id="f-title" type="text" value="${esc(p.title||'')}" placeholder="Senior Product Designer">
+          <label>Goal of the raise</label>
+          <textarea class="input" id="f-goal" placeholder="e.g. Asking for 12% and a title bump to Staff Designer — took on the design-system rebuild this year with no comp change.">${esc(p.goal||'')}</textarea>
+          <span class="text-muted" style="font-size:12px">Target % or number, or the trigger — promotion, market correction, new scope.</span>
         </div>
-      </div>
-      <div class="field">
-        <label>Goal of the raise</label>
-        <textarea class="input" id="f-goal" placeholder="e.g. Asking for 12% and a title bump to Staff Designer — took on the design-system rebuild this year with no comp change.">${esc(p.goal||'')}</textarea>
-        <span class="text-muted" style="font-size:12px">Target % or number, or the trigger — promotion, market correction, new scope.</span>
       </div>
 
-      <div class="concept-panel">
+      <div class="optional-panel">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
           <div>
             <span class="card-kicker">Optional &mdash; sharpen the simulation</span>
@@ -613,19 +613,10 @@ function renderSetup(){
           </div>
           <span class="text-muted" style="font-size:12px">Every plan is built around the Seven Elements of negotiation — Interests, Legitimacy, Relationships, Alternatives (BATNA), Options, Commitments, Communication.</span>
         </div>
-        <div class="field" style="margin-bottom:0">
-          <label>Concepts to stress-test</label>
-          <div class="chip-group" id="concept-chips">
-            ${CONCEPTS.map(c=>{
-              const active = concepts.includes(c);
-              const t = tone(CONCEPT_HUES[c]);
-              return `<span class="chip-toggle" data-concept="${esc(c)}" style="${active?`background:${t.bg};color:${t.color};border-color:transparent`:''}">${esc(c)}</span>`;
-            }).join('')}
-          </div>
-          <span class="text-muted" style="font-size:12px">Selected habits get worked into the AI manager's replies, without naming them.</span>
-        </div>
       </div>
+    </div>
 
+    <div class="setup-actions">
       <button class="btn btn-primary btn-block" id="btn-build-plan" style="font-size:14.5px;padding:13px" disabled>
         <i class="ph-bold ph-arrow-right"></i> Build my plan
       </button>
@@ -1054,22 +1045,6 @@ function wireSetupValidation(){
 /* ---------------- Event wiring ---------------- */
 function attachHandlers(){
   if(VIEW==='setup'){
-    document.querySelectorAll('#concept-chips .chip-toggle').forEach(chip=>{
-      const c = chip.getAttribute('data-concept');
-      chip.onclick = ()=>{
-        if(!draft) draft = { concepts: [] };
-        if(!draft.concepts) draft.concepts = [];
-        const idx = draft.concepts.indexOf(c);
-        const nowActive = idx === -1;
-        if(idx>-1) draft.concepts.splice(idx,1); else draft.concepts.push(c);
-        if(nowActive){
-          const t = tone(CONCEPT_HUES[c]);
-          chip.style.background = t.bg; chip.style.color = t.color; chip.style.borderColor = 'transparent';
-        } else {
-          chip.style.background = 'transparent'; chip.style.color = 'color-mix(in srgb, var(--color-text) 65%, transparent)'; chip.style.borderColor = 'var(--color-divider)';
-        }
-      };
-    });
     document.getElementById('btn-build-plan').onclick = onBuildPlan;
     wireSetupValidation();
     const randomizeBtn = document.getElementById('btn-randomize-context');
@@ -1246,18 +1221,17 @@ async function onBuildPlan(){
   const batna = document.getElementById('f-batna').value.trim();
   const timeline = document.getElementById('f-timeline').value.trim();
   const framework = 'seven';
-  const concepts = (draft && draft.concepts) ? draft.concepts : [];
   if(!name || !title || !goal) return;
 
   const prefill = { name, title, goal, mgrName, mgrDisp, companySize, yearsExperience, companyCulture, batna, timeline };
   const existingScenarioId = draft ? draft.existingScenarioId : null;
-  draft = { prefill, framework, concepts, existingScenarioId };
+  draft = { prefill, framework, concepts: [], existingScenarioId };
 
   VIEW = 'plan';
   planLoading = true;
   render();
 
-  const plan = await generatePlan(prefill, framework, concepts);
+  const plan = await generatePlan(prefill, framework);
   draft.plan = plan;
   planLoading = false;
   render();
@@ -1265,17 +1239,13 @@ async function onBuildPlan(){
 
 async function onRegeneratePlan(){
   planLoading = true; render();
-  const plan = await generatePlan(draft.prefill, draft.framework, draft.concepts);
+  const plan = await generatePlan(draft.prefill, draft.framework);
   draft.plan = plan;
   planLoading = false;
   render();
 }
 
-// Each entry describes one section as a flat instruction line — these get merged
-// with the universal Context/Target/BATNA lines into a single ordered list, so the
-// model only ever sees one "produce exactly N sections" instruction, never two
-// competing ones.
-async function generatePlan(prefill, framework, concepts){
+async function generatePlan(prefill, framework){
   const lengthNote = RESPONSE_DETAIL === 'detailed'
     ? ' In detailed mode, stretch further: analyses can run to 4 sentences, use the full 5 bullets, and scripts can run to 2-3 sentences.'
     : ' In concise mode, keep analyses to 2-3 sentences and use 3 bullets — still substantive, just economical.';
@@ -1302,7 +1272,6 @@ Where critical information is missing (a real BATNA, the manager's likely constr
 - My experience level: ${prefill.yearsExperience ? yearsExperienceLabel(prefill.yearsExperience) : 'unspecified'}
 - My BATNA / best alternative: ${prefill.batna || 'not supplied'}
 - Timeline: ${prefill.timeline || 'not supplied'}
-- Concepts to stress-test in the plan where relevant: ${concepts.length ? concepts.join(', ') : 'none specified'}
 
 TASK:
 Rewrite and deepen this into a full negotiation plan using the 7 Elements of Negotiation (Harvard PON framework).
