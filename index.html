@@ -296,7 +296,7 @@ async function loadData(){
     DATA.attempts = (attempts||[]).map(a=>({
       id: a.id, scenarioId: a.scenario_id, framework: a.framework, concepts: a.concepts,
       plan: a.plan, transcript: a.transcript, summaryTags: a.summary_tags,
-      outcome: a.outcome, status: a.status, createdAt: new Date(a.created_at).getTime()
+      outcome: a.outcome, status: a.status, feedback: a.feedback, createdAt: new Date(a.created_at).getTime()
     }));
   }catch(e){ console.error('loadData failed', e); }
 }
@@ -376,12 +376,13 @@ async function askAI(system, messages, wantJSON, _isRetry){
 }
 
 /* ---------------- App state ---------------- */
-let VIEW = 'home'; // home | setup | plan | live | detail | settings
+let VIEW = 'home'; // home | setup | plan | live | feedback | detail | settings
 let draft = null;     // in-progress setup+plan+attempt object being built
 let historyDetail = null; // attempt id being viewed read-only
 let planLoading = false;
 let liveLoading = false;
 let summaryLoading = false;
+let feedbackLoading = false;
 let showLeaveDialog = false;
 
 const DETAIL_KEY = 'accord-response-detail-v1';
@@ -406,7 +407,7 @@ const FRAMEWORKS = [
   { id: 'multi', label: 'Multi-issue Expansion' },
   { id: 'two', label: '2 Elements (Interests + BATNA)' }
 ];
-const STEP_LABELS = ['Set the scene', 'Prep plan', 'Practice'];
+const STEP_LABELS = ['Set the scene', 'Prep plan', 'Practice', 'Feedback'];
 
 const COMPANY_SIZES = [
   { id: '1-10', label: '1–10 people — early-stage startup' },
@@ -464,6 +465,7 @@ const HUES = { accent:289, indigo:255, blue:228, cyan:200, teal:176, green:142, 
 function tone(hue){ return { bg:'oklch(30% 0.075 '+hue+')', color:'oklch(92% 0.035 '+hue+')' }; }
 const FRAMEWORK_HUES = { seven:HUES.indigo, core:HUES.teal, anchor:HUES.amber, multi:HUES.cyan, two:HUES.accent };
 const SUMMARY_TYPE_HUES = { anchor:HUES.green, pushback:HUES.rose, term:HUES.blue };
+const RATING_HUES = { 'Strong':HUES.green, 'Solid':HUES.blue, 'Needs work':HUES.rose };
 
 function outcomeHue(status, outcome){
   if(status === 'in-progress') return HUES.accent;
@@ -524,6 +526,7 @@ function render(){
   else if(VIEW==='setup') screen.innerHTML = renderSetup();
   else if(VIEW==='plan') screen.innerHTML = renderPlan();
   else if(VIEW==='live') screen.innerHTML = renderLive();
+  else if(VIEW==='feedback') screen.innerHTML = renderFeedback();
   else if(VIEW==='detail') screen.innerHTML = renderDetail();
   else if(VIEW==='settings') screen.innerHTML = renderSettings();
   attachHandlers();
@@ -840,6 +843,76 @@ function renderLive(){
   `;
 }
 
+/* ---------------- Screen: Feedback ---------------- */
+function renderFeedbackBody(f){
+  if(!f) return '';
+  return `
+    ${f.overallSummary ? `
+    <div class="card elev-sm" style="padding:var(--space-4);gap:6px">
+      <span class="card-kicker">Overall</span>
+      <p style="margin:0;font-size:14px;opacity:0.9">${esc(f.overallSummary)}</p>
+    </div>` : ''}
+    <div class="plan-grid">
+    ${(f.sections||[]).map(s=>{
+      const t = tone(RATING_HUES[s.rating] ?? HUES.accent);
+      return `
+      <div class="card elev-sm plan-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span class="card-kicker">${esc(s.title)}</span>
+          <span class="tag" style="background:${t.bg};color:${t.color}">${esc(s.rating || '')}</span>
+        </div>
+        ${s.assessment ? `<p style="margin:0;font-size:13.5px;opacity:0.9">${esc(s.assessment)}</p>` : ''}
+        ${(s.bullets||[]).map(b=>`
+          <div class="plan-bullet">
+            <span class="dot">&#9679;</span>
+            <li>${esc(b)}</li>
+          </div>
+        `).join('')}
+      </div>
+    `;}).join('')}
+    </div>
+    ${f.nextTimeTip ? `
+    <div class="card elev-sm" style="padding:var(--space-4);gap:6px;border:1px solid var(--color-accent)">
+      <span class="card-kicker"><i class="ph-bold ph-arrow-clockwise"></i> Next time</span>
+      <p style="margin:0;font-size:13.5px;opacity:0.9">${esc(f.nextTimeTip)}</p>
+    </div>` : ''}
+  `;
+}
+
+function renderFeedback(){
+  if(feedbackLoading){
+    return `
+    <div class="screen">
+      ${renderStepper(3)}
+      <h2>How you did</h2>
+      <p class="text-muted" style="font-size:14.5px">Reviewing the conversation against the 7 Elements of negotiation&hellip;</p>
+      <div class="card elev-sm" style="padding:var(--space-4);gap:10px">
+        <div class="skeleton-bar" style="width:120px;height:11px"></div>
+        <div class="skeleton-bar" style="width:100%;height:13px"></div>
+        <div class="skeleton-bar" style="width:85%;height:13px"></div>
+      </div>
+      <div class="card elev-sm" style="padding:var(--space-4);gap:10px">
+        <div class="skeleton-bar" style="width:90px;height:11px"></div>
+        <div class="skeleton-bar" style="width:95%;height:13px"></div>
+        <div class="skeleton-bar" style="width:70%;height:13px"></div>
+      </div>
+    </div>`;
+  }
+  if(!draft || !draft.feedback){
+    return `<div class="screen">${renderStepper(3)}<p class="text-muted">No feedback yet.</p></div>`;
+  }
+  return `
+  <div class="screen">
+    ${renderStepper(3)}
+    <div>
+      <h2>How you did</h2>
+      <p class="text-muted" style="font-size:14.5px">Feedback on this conversation, assessed against the 7 Elements of negotiation.</p>
+    </div>
+    ${renderFeedbackBody(draft.feedback)}
+    <button class="btn btn-primary" id="btn-feedback-done" style="align-self:flex-start;font-size:14.5px;padding:12px 22px">Done <i class="ph-bold ph-check"></i></button>
+  </div>`;
+}
+
 /* ---------------- Screen: Home ---------------- */
 function groupAttempts(){
   const groups = {};
@@ -964,6 +1037,28 @@ function renderDetail(){
             }).join('') || '<span class="text-muted" style="font-size:13px">No tags recorded.</span>'}
           </div>
         </div>
+        ${at.feedback ? `
+        <div class="card elev-sm" style="padding:var(--space-4);gap:8px">
+          <h5 style="margin:0">Feedback</h5>
+          ${at.feedback.overallSummary ? `<p class="text-muted" style="margin:3px 0 0;font-size:12.5px">${esc(at.feedback.overallSummary)}</p>` : ''}
+          ${(at.feedback.sections||[]).map(s=>{
+            const t = tone(RATING_HUES[s.rating] ?? HUES.accent);
+            return `
+            <div style="margin-top:6px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <span class="card-kicker">${esc(s.title)}</span>
+                <span class="tag" style="background:${t.bg};color:${t.color};font-size:10px">${esc(s.rating||'')}</span>
+              </div>
+              ${s.assessment ? `<p class="text-muted" style="margin:3px 0 0;font-size:12.5px;font-style:italic">${esc(s.assessment)}</p>` : ''}
+              ${(s.bullets||[]).map(b=>`<p class="text-muted" style="margin:3px 0 0;font-size:13px">&#8226; ${esc(b)}</p>`).join('')}
+            </div>
+          `;}).join('')}
+          ${at.feedback.nextTimeTip ? `
+            <div style="margin-top:6px">
+              <span class="card-kicker">Next time</span>
+              <p class="text-muted" style="margin:3px 0 0;font-size:13px">${esc(at.feedback.nextTimeTip)}</p>
+            </div>` : ''}
+        </div>` : ''}
       </div>
     </div>
   </div>`;
@@ -1178,6 +1273,10 @@ function attachHandlers(){
     const saveBtn = document.getElementById('btn-leave-save');
     if(saveBtn) saveBtn.onclick = onSaveAndExit;
   }
+  if(VIEW==='feedback'){
+    const doneBtn = document.getElementById('btn-feedback-done');
+    if(doneBtn) doneBtn.onclick = finishFeedback;
+  }
   if(VIEW==='home'){
     const newBtn = document.getElementById('btn-new-scenario');
     if(newBtn) newBtn.onclick = startNewScenario;
@@ -1365,6 +1464,57 @@ function fallbackPlan(prefill){
   };
 }
 
+async function generateFeedback(prefill, transcript, plan){
+  const lengthNote = RESPONSE_DETAIL === 'detailed'
+    ? ' In detailed mode, assessments can run 3-4 sentences and use up to 4 bullets per element.'
+    : ' In concise mode, keep assessments to 2 sentences and 2-3 bullets per element.';
+  const system = `You are a sharp negotiation coach reviewing a completed rehearsal of a salary-raise negotiation. You are given the full transcript of what was actually said, and the prep plan the employee went in with. Give honest, specific feedback on how the EMPLOYEE performed during THIS conversation — grounded in what was actually said (quote or closely paraphrase real moments), never generic advice and never just a repeat of the prep plan.
+
+Assess performance against the 7 Elements of Negotiation framework: Interests, Legitimacy, Relationships, Alternatives (BATNA/WATNA), Options, Commitments, Communication.
+
+Output ONLY valid JSON, no preamble, no markdown fences, matching exactly this schema:
+{"overallSummary":string,"sections":[{"title":string,"rating":"Strong"|"Solid"|"Needs work","assessment":string,"bullets":[string,...]}],"nextTimeTip":string}
+
+- "overallSummary": 2-4 sentences on how the negotiation actually went, referencing specific things that happened.
+- "sections": produce exactly 7, titled in this order: "Interests", "Legitimacy", "Relationships", "Alternatives (BATNA/WATNA)", "Options", "Commitments", "Communication". "rating" must be exactly one of "Strong", "Solid", or "Needs work", reflecting how well the EMPLOYEE (not the manager) handled that dimension. If the conversation never touched on an element at all, rating it "Needs work" and say so plainly — don't invent evidence that wasn't there. "assessment" reasons from what happened; "bullets" cite specific moments or near-quotes from the transcript and what they show.
+- "nextTimeTip": one concrete, specific, actionable tip for the next rehearsal, grounded in what happened this time — not generic advice.${lengthNote}`;
+
+  const planRef = (plan && Array.isArray(plan.sections))
+    ? plan.sections.map(s => `- ${s.title}: ${s.analysis || s.summary || ''}`).join('\n')
+    : 'No plan on record.';
+  const transcriptText = (transcript || []).map(m => (m.role === 'user' ? 'Employee: ' : 'Manager: ') + m.text).join('\n') || '(no messages were exchanged)';
+
+  const userMsg = `Employee: ${prefill.name}, ${prefill.title}. Goal of the ask: ${prefill.goal}. Manager: ${prefill.mgrName || 'unspecified'}.
+
+The plan the employee prepared with:
+${planRef}
+
+Full transcript of the actual conversation:
+${transcriptText}
+
+Give feedback per the 7 Elements framework as instructed. Return only the JSON object.`;
+
+  const result = await askAI(system, [{role:'user', content:userMsg}], true);
+  if(result && Array.isArray(result.sections) && result.sections.length) return result;
+  return fallbackFeedback(prefill, transcript);
+}
+
+function fallbackFeedback(prefill, transcript){
+  const turns = (transcript || []).filter(m => m.role === 'user').length;
+  const titles = ['Interests', 'Legitimacy', 'Relationships', 'Alternatives (BATNA/WATNA)', 'Options', 'Commitments', 'Communication'];
+  return {
+    overallSummary: turns > 0
+      ? `This feedback was generated offline (the AI service was unavailable), so it's a generic placeholder rather than a real read on the ${turns}-message conversation you just had. Re-run it once the AI service is back for an assessment grounded in what was actually said.`
+      : 'The conversation ended with no messages exchanged, so there is nothing yet to assess — this is a placeholder, generated offline.',
+    sections: titles.map(title => ({
+      title, rating: 'Needs work',
+      assessment: 'No real analysis available offline — this element could not be assessed against the actual transcript.',
+      bullets: ['Re-run feedback generation once the AI service is available for a real, transcript-grounded assessment.'],
+    })),
+    nextTimeTip: 'Try ending the negotiation again once the AI service is available, so the feedback can reference what actually happened in the conversation.',
+  };
+}
+
 async function onStartNegotiation(){
   let scenarioId = draft.existingScenarioId;
   if(!scenarioId){
@@ -1398,6 +1548,7 @@ async function saveAttemptSnapshot(status){
     summary_tags: draft.summaryTags,
     outcome: draft.outcome || null,
     status: status || 'in-progress',
+    feedback: draft.feedback || null,
     created_at: new Date(draft.createdAt).toISOString(),
     updated_at: new Date().toISOString()
   };
@@ -1407,7 +1558,7 @@ async function saveAttemptSnapshot(status){
   const local = {
     id: draft.attemptId, scenarioId: draft.scenarioId, framework: draft.framework, concepts: draft.concepts,
     plan: draft.plan, transcript: draft.transcript, summaryTags: draft.summaryTags,
-    outcome: draft.outcome || null, status: status || 'in-progress', createdAt: draft.createdAt
+    outcome: draft.outcome || null, status: status || 'in-progress', feedback: draft.feedback || null, createdAt: draft.createdAt
   };
   const idx = DATA.attempts.findIndex(a=>a.id===draft.attemptId);
   if(idx>-1) DATA.attempts[idx] = local; else DATA.attempts.push(local);
@@ -1474,10 +1625,14 @@ async function pauseAndExit(){
 
 async function closeWithAgreement(){
   draft.outcome = 'Manager agreed';
-  await saveAttemptSnapshot('completed');
-  draft = null;
   showLeaveDialog = false;
-  VIEW = 'home';
+  VIEW = 'feedback';
+  feedbackLoading = true;
+  render();
+
+  draft.feedback = await generateFeedback(draft.prefill, draft.transcript, draft.plan);
+  feedbackLoading = false;
+  await saveAttemptSnapshot('completed');
   render();
 }
 
@@ -1490,17 +1645,31 @@ async function onDiscardAttempt(){
 }
 
 async function onSaveAndExit(){
+  showLeaveDialog = false;
+  VIEW = 'feedback';
+  feedbackLoading = true;
+  render();
+
   if(draft.transcript.length>0){
-    const system = `Summarize the outcome of this salary negotiation roleplay in one short punchy tag, 3-6 words, e.g. "Held anchor", "Conceded early", "Manager agreed to review in Q1". Output ONLY valid JSON: {"outcome":"..."}`;
+    const outcomeSystem = `Summarize the outcome of this salary negotiation roleplay in one short punchy tag, 3-6 words, e.g. "Held anchor", "Conceded early", "Manager agreed to review in Q1". Output ONLY valid JSON: {"outcome":"..."}`;
     const transcriptText = draft.transcript.map(m=> (m.role==='user'?'Employee: ':'Manager: ') + m.text).join('\n');
-    const result = await askAI(system, [{role:'user', content: transcriptText}], true);
-    draft.outcome = (result && result.outcome) ? result.outcome : 'Attempt recorded';
+    const [outcomeResult, feedback] = await Promise.all([
+      askAI(outcomeSystem, [{role:'user', content: transcriptText}], true),
+      generateFeedback(draft.prefill, draft.transcript, draft.plan),
+    ]);
+    draft.outcome = (outcomeResult && outcomeResult.outcome) ? outcomeResult.outcome : 'Attempt recorded';
+    draft.feedback = feedback;
   } else {
     draft.outcome = 'Ended early';
+    draft.feedback = await generateFeedback(draft.prefill, draft.transcript, draft.plan);
   }
+  feedbackLoading = false;
   await saveAttemptSnapshot('completed');
+  render();
+}
+
+function finishFeedback(){
   draft = null;
-  showLeaveDialog = false;
   VIEW = 'home';
   render();
 }

@@ -56,3 +56,7 @@ alter table scenarios add column if not exists years_experience text;
 alter table scenarios add column if not exists company_culture text;
 alter table scenarios add column if not exists batna text;
 alter table scenarios add column if not exists timeline text;
+
+-- Added later: post-conversation feedback (7 Elements assessment) generated when an
+-- attempt is completed. Safe to re-run.
+alter table attempts add column if not exists feedback jsonb;
