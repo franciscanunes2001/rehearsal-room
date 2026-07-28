@@ -440,6 +440,15 @@ const TIMELINE_EXAMPLES = [
   'Company just closed its fiscal year, budget planning is happening now.',
   'I’m flexible on timing, just want to start the conversation.',
 ];
+const MGR_NAME_EXAMPLES = ['Priya', 'Diane', 'Marcus', 'Aisha', 'Tom', 'Elena', 'Raj', 'Sofia'];
+const MGR_DISP_EXAMPLES = [
+  'Budget-constrained, data-driven',
+  'Supportive but has to justify it upward',
+  'Direct and no-nonsense, dislikes surprises',
+  'Avoids confrontation, easy to over-hedge with',
+  'New to the role, still building credibility with their own boss',
+  'Process-oriented, wants everything documented',
+];
 
 function frameworkLabel(id){
   const f = FRAMEWORKS.find(f=>f.id===id);
@@ -1085,6 +1094,8 @@ function attachHandlers(){
       pick(COMPANY_SIZES, 'f-company-size');
       pick(YEARS_EXPERIENCE, 'f-years-exp');
       pick(COMPANY_CULTURES, 'f-company-culture');
+      pickText(MGR_NAME_EXAMPLES, 'f-mgr-name');
+      pickText(MGR_DISP_EXAMPLES, 'f-mgr-disp');
       pickText(BATNA_EXAMPLES, 'f-batna');
       pickText(TIMELINE_EXAMPLES, 'f-timeline');
     };
