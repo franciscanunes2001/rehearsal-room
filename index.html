@@ -384,6 +384,7 @@ async function askAI(system, messages, wantJSON, _isRetry){
 let VIEW = 'home'; // home | setup | plan | live | feedback | detail | settings
 let draft = null;     // in-progress setup+plan+attempt object being built
 let historyDetail = null; // attempt id being viewed read-only
+let historyDetailStep = 'feedback'; // 'scene' | 'plan' | 'practice' | 'feedback'
 let planLoading = false;
 let liveLoading = false;
 let summaryLoading = false;
@@ -540,6 +541,14 @@ function render(){
 }
 
 function goHome(){ historyDetail = null; VIEW = 'home'; render(); }
+
+function openHistoryDetail(id){
+  const at = DATA.attempts.find(a=>a.id===id);
+  historyDetail = id;
+  historyDetailStep = (at && at.feedback) ? 'feedback' : 'practice';
+  VIEW = 'detail';
+  render();
+}
 function startNewScenario(){ draft = null; VIEW = 'setup'; render(); }
 
 function renderStepper(activeIndex){
@@ -558,6 +567,33 @@ function renderStepper(activeIndex){
   return `<div style="display:flex;align-items:center;gap:0">
     ${items.map(it=>`
       <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;background:${it.circleBg};color:${it.circleColor};border:1px solid ${it.circleBorder};flex:none">${it.number}</div>
+        <span style="font-size:13px;font-weight:600;color:${it.textColor}">${esc(it.label)}</span>
+      </div>
+      ${it.hasNext ? `<div style="width:32px;height:1px;background:${it.lineColor};margin:0 10px;flex:none"></div>` : ''}
+    `).join('')}
+  </div>`;
+}
+
+const DETAIL_STEP_KEYS = ['scene', 'plan', 'practice', 'feedback'];
+
+function renderDetailStepper(activeKey){
+  const activeIndex = DETAIL_STEP_KEYS.indexOf(activeKey);
+  const items = STEP_LABELS.map((label, i)=>{
+    const filled = i <= activeIndex;
+    return {
+      key: DETAIL_STEP_KEYS[i], label, number: i+1,
+      circleBg: filled ? 'var(--color-accent-800)' : 'transparent',
+      circleColor: filled ? 'var(--color-accent-100)' : 'color-mix(in srgb, var(--color-text) 45%, transparent)',
+      circleBorder: i === activeIndex ? 'var(--color-accent)' : (filled ? 'var(--color-accent)' : 'var(--color-divider)'),
+      textColor: i === activeIndex ? 'var(--color-text)' : (filled ? 'var(--color-text)' : 'color-mix(in srgb, var(--color-text) 45%, transparent)'),
+      lineColor: i < activeIndex ? 'var(--color-accent)' : 'var(--color-divider)',
+      hasNext: i < STEP_LABELS.length - 1,
+    };
+  });
+  return `<div style="display:flex;align-items:center;gap:0">
+    ${items.map(it=>`
+      <div class="detail-step" data-step="${it.key}" style="display:flex;align-items:center;gap:8px;cursor:pointer">
         <div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;background:${it.circleBg};color:${it.circleColor};border:1px solid ${it.circleBorder};flex:none">${it.number}</div>
         <span style="font-size:13px;font-weight:600;color:${it.textColor}">${esc(it.label)}</span>
       </div>
@@ -668,6 +704,51 @@ function renderSetup(){
 }
 
 /* ---------------- Screen: Plan ---------------- */
+function renderPlanSections(plan, editable){
+  if(!plan) return '';
+  const p = plan;
+  return `
+    ${p.context ? `
+    <div class="card elev-sm" style="padding:var(--space-4);gap:6px">
+      <span class="card-kicker">Context</span>
+      <p class="plan-context" ${editable ? 'contenteditable="true" data-field="context"' : ''} style="margin:0;font-size:13px;opacity:0.85">${esc(p.context)}</p>
+    </div>` : ''}
+    <div class="plan-grid">
+    ${(p.sections||[]).map((s,si)=>{
+      const analysis = s.analysis || s.summary;
+      return `
+      <div class="card elev-sm plan-section">
+        <span class="card-kicker">${esc(s.title)}</span>
+        ${analysis ? `<p class="plan-summary" ${editable ? `contenteditable="true" data-si="${si}"` : ''} style="margin:0;font-size:13.5px;opacity:0.9">${esc(analysis)}</p>` : ''}
+        ${(s.bullets||[]).map((b,bi)=>`
+          <div class="plan-bullet">
+            <span class="dot">&#9679;</span>
+            <li ${editable ? `contenteditable="true" data-si="${si}" data-bi="${bi}"` : ''}>${esc(b)}</li>
+          </div>
+        `).join('')}
+        ${s.script ? `<div class="plan-script">&ldquo;${editable ? `<span contenteditable="true" data-si="${si}">${esc(s.script)}</span>` : esc(s.script)}&rdquo;</div>` : ''}
+        ${s.risk ? `<div class="plan-risk"><i class="ph-bold ph-warning"></i>${editable ? `<span contenteditable="true" data-si="${si}">${esc(s.risk)}</span>` : esc(s.risk)}</div>` : ''}
+      </div>
+    `;}).join('')}
+    </div>
+    ${p.recommendedOpeningMove ? `
+    <div class="card elev-sm" style="padding:var(--space-4);gap:6px;border:1px solid var(--color-accent)">
+      <span class="card-kicker"><i class="ph-bold ph-flag-pennant"></i> Recommended opening move</span>
+      <p class="plan-opening-move" ${editable ? 'contenteditable="true"' : ''} style="margin:0;font-size:13.5px;opacity:0.9">${esc(p.recommendedOpeningMove)}</p>
+    </div>` : ''}
+    ${p.whereExposed && p.whereExposed.length ? `
+    <div class="card elev-sm" style="padding:var(--space-4);gap:6px">
+      <span class="card-kicker"><i class="ph-bold ph-shield-warning"></i> Where I'm exposed</span>
+      ${p.whereExposed.map((w,wi)=>`
+        <div class="plan-bullet">
+          <span class="dot">&#9679;</span>
+          <li ${editable ? `contenteditable="true" data-wi="${wi}" class="exposed-item"` : 'class="exposed-item"'}>${esc(w)}</li>
+        </div>
+      `).join('')}
+    </div>` : ''}
+  `;
+}
+
 function renderPlan(){
   const fwTone = tone(FRAMEWORK_HUES[draft ? draft.framework : ''] ?? HUES.accent);
   const fwLabel = frameworkLabel(draft ? draft.framework : '');
@@ -705,44 +786,7 @@ function renderPlan(){
       </div>
       <button class="btn btn-secondary" id="btn-regenerate" style="font-size:13px"><i class="ph-bold ph-arrow-clockwise"></i> Regenerate</button>
     </div>
-    ${p.context ? `
-    <div class="card elev-sm" style="padding:var(--space-4);gap:6px">
-      <span class="card-kicker">Context</span>
-      <p class="plan-context" contenteditable="true" data-field="context" style="margin:0;font-size:13px;opacity:0.85">${esc(p.context)}</p>
-    </div>` : ''}
-    <div class="plan-grid">
-    ${(p.sections||[]).map((s,si)=>{
-      const analysis = s.analysis || s.summary;
-      return `
-      <div class="card elev-sm plan-section">
-        <span class="card-kicker">${esc(s.title)}</span>
-        ${analysis ? `<p class="plan-summary" contenteditable="true" data-si="${si}" style="margin:0;font-size:13.5px;opacity:0.9">${esc(analysis)}</p>` : ''}
-        ${(s.bullets||[]).map((b,bi)=>`
-          <div class="plan-bullet">
-            <span class="dot">&#9679;</span>
-            <li contenteditable="true" data-si="${si}" data-bi="${bi}">${esc(b)}</li>
-          </div>
-        `).join('')}
-        ${s.script ? `<div class="plan-script">&ldquo;<span contenteditable="true" data-si="${si}">${esc(s.script)}</span>&rdquo;</div>` : ''}
-        ${s.risk ? `<div class="plan-risk"><i class="ph-bold ph-warning"></i><span contenteditable="true" data-si="${si}">${esc(s.risk)}</span></div>` : ''}
-      </div>
-    `;}).join('')}
-    </div>
-    ${p.recommendedOpeningMove ? `
-    <div class="card elev-sm" style="padding:var(--space-4);gap:6px;border:1px solid var(--color-accent)">
-      <span class="card-kicker"><i class="ph-bold ph-flag-pennant"></i> Recommended opening move</span>
-      <p class="plan-opening-move" contenteditable="true" style="margin:0;font-size:13.5px;opacity:0.9">${esc(p.recommendedOpeningMove)}</p>
-    </div>` : ''}
-    ${p.whereExposed && p.whereExposed.length ? `
-    <div class="card elev-sm" style="padding:var(--space-4);gap:6px">
-      <span class="card-kicker"><i class="ph-bold ph-shield-warning"></i> Where I'm exposed</span>
-      ${p.whereExposed.map((w,wi)=>`
-        <div class="plan-bullet">
-          <span class="dot">&#9679;</span>
-          <li contenteditable="true" data-wi="${wi}" class="exposed-item">${esc(w)}</li>
-        </div>
-      `).join('')}
-    </div>` : ''}
+    ${renderPlanSections(p, true)}
     <div style="display:flex;justify-content:space-between;gap:12px">
       <button class="btn btn-secondary" id="btn-back-setup">&larr; Back to setup</button>
       <button class="btn btn-primary" id="btn-start-negotiation" style="font-size:14.5px;padding:12px 22px">Start negotiation <i class="ph-bold ph-arrow-right"></i></button>
@@ -1008,12 +1052,70 @@ function renderHome(){
 }
 
 /* ---------------- Screen: Detail (read-only) ---------------- */
+function renderDetailScene(sc){
+  if(!sc) return '<p class="text-muted">Scenario details not found.</p>';
+  const field = (label, value) => `<div class="field" style="margin-bottom:0"><label>${label}</label><p style="margin:0;font-size:14px">${value ? esc(value) : '<span class="text-muted">&mdash;</span>'}</p></div>`;
+  return `
+    <div class="setup-columns">
+      <div class="card elev-sm" style="padding:var(--space-6);gap:var(--space-4)">
+        <span class="card-kicker">The essentials</span>
+        <div class="row2">
+          ${field('Your name', sc.name)}
+          ${field('Your title', sc.title)}
+        </div>
+        ${field('Goal of the raise', sc.goal)}
+      </div>
+      <div class="optional-panel">
+        <span class="card-kicker">Scenario details</span>
+        <div class="row2">
+          ${field('Company size', sc.companySize ? companySizeLabel(sc.companySize) : '')}
+          ${field('Your years of experience', sc.yearsExperience ? yearsExperienceLabel(sc.yearsExperience) : '')}
+        </div>
+        ${field('Company culture', sc.companyCulture ? companyCultureLabel(sc.companyCulture) : '')}
+        <div class="row2">
+          ${field("Manager's name", sc.mgrName)}
+          ${field('Likely disposition', sc.mgrDisp)}
+        </div>
+        <div class="row2">
+          ${field('Your BATNA / best alternative', sc.batna)}
+          ${field('Timeline', sc.timeline)}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderDetailPractice(at, sc){
+  const messages = at.transcript || [];
+  return `
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:760px">
+      ${messages.map(m=>`
+        <div class="msg-row ${m.role==='user'?'you':'them'}">
+          <div class="msg ${m.role==='user'?'you':'them'}">
+            <span class="role-tag">${m.role==='user' ? esc(sc?sc.name:'You') : esc(sc&&sc.mgrName?sc.mgrName:'Manager')}</span>${esc(m.text)}
+          </div>
+        </div>
+      `).join('') || '<p class="text-muted">No messages recorded.</p>'}
+    </div>
+    <div class="card elev-sm" style="padding:var(--space-4);gap:8px;max-width:760px">
+      <h5 style="margin:0">Live summary</h5>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px">
+        ${(at.summaryTags||[]).map(tg=>{
+          const tt = tone(SUMMARY_TYPE_HUES[tg.type] || HUES.accent);
+          return `<span class="tag" style="background:${tt.bg};color:${tt.color}">${esc(tg.text)}</span>`;
+        }).join('') || '<span class="text-muted" style="font-size:13px">No tags recorded.</span>'}
+      </div>
+    </div>
+  `;
+}
+
 function renderDetail(){
   const at = DATA.attempts.find(a=>a.id===historyDetail);
   if(!at) return `<div class="screen"><p class="text-muted">Attempt not found.</p></div>`;
   const sc = DATA.scenarios.find(s=>s.id===at.scenarioId);
   const label = at.status==='in-progress' ? 'In progress' : (at.outcome || 'Completed');
   const t = tone(outcomeHue(at.status, at.outcome));
+  const step = historyDetailStep;
   return `
   <div class="screen" style="max-width:1100px">
     <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
@@ -1023,85 +1125,18 @@ function renderDetail(){
       <button class="btn btn-primary" id="btn-try-different-detail" data-scenario="${sc ? sc.id : ''}">Try a different approach</button>
     </div>
     ${sc ? `<p class="text-muted" style="margin:0;font-size:13px">${esc(sc.name)} &middot; ${esc(sc.title)} &mdash; ${esc(sc.goal)}</p>` : ''}
-    <div class="two-col">
-      <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
-        <span class="card-kicker">Transcript</span>
-        <div style="display:flex;flex-direction:column;gap:12px;max-height:520px;overflow-y:auto;padding:4px">
-          ${(at.transcript||[]).map(m=>`
-            <div class="msg-row ${m.role==='user'?'you':'them'}">
-              <div class="msg ${m.role==='user'?'you':'them'}">
-                <span class="role-tag">${m.role==='user' ? esc(sc?sc.name:'You') : esc(sc&&sc.mgrName?sc.mgrName:'Manager')}</span>${esc(m.text)}
-              </div>
-            </div>
-          `).join('') || '<p class="text-muted">No messages recorded.</p>'}
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:14px">
-        <div class="card elev-sm" style="padding:var(--space-4);gap:8px">
-          <h5 style="margin:0">The plan used</h5>
-          ${at.plan && at.plan.context ? `
-            <div style="margin-top:6px">
-              <span class="card-kicker">Context</span>
-              <p class="text-muted plan-context" style="margin:3px 0 0;font-size:12.5px">${esc(at.plan.context)}</p>
-            </div>` : ''}
-          ${(at.plan && at.plan.sections || []).map(s=>`
-            <div style="margin-top:6px">
-              <span class="card-kicker">${esc(s.title)}</span>
-              ${(s.analysis || s.summary) ? `<p class="text-muted" style="margin:3px 0 0;font-size:12.5px;font-style:italic">${esc(s.analysis || s.summary)}</p>` : ''}
-              ${(s.bullets||[]).map(b=>`<p class="text-muted" style="margin:3px 0 0;font-size:13px">&#8226; ${esc(b)}</p>`).join('')}
-              ${s.script ? `<p class="text-muted" style="margin:3px 0 0;font-size:12.5px">&ldquo;${esc(s.script)}&rdquo;</p>` : ''}
-              ${s.risk ? `<p style="margin:3px 0 0;font-size:12px;color:oklch(78% 0.09 78)"><i class="ph-bold ph-warning"></i> ${esc(s.risk)}</p>` : ''}
-            </div>
-          `).join('')}
-          ${at.plan && at.plan.recommendedOpeningMove ? `
-            <div style="margin-top:6px">
-              <span class="card-kicker">Recommended opening move</span>
-              <p class="text-muted" style="margin:3px 0 0;font-size:13px">${esc(at.plan.recommendedOpeningMove)}</p>
-            </div>` : ''}
-          ${at.plan && at.plan.whereExposed && at.plan.whereExposed.length ? `
-            <div style="margin-top:6px">
-              <span class="card-kicker">Where I'm exposed</span>
-              ${at.plan.whereExposed.map(w=>`<p class="text-muted" style="margin:3px 0 0;font-size:13px">&#8226; ${esc(w)}</p>`).join('')}
-            </div>` : ''}
-        </div>
-        <div class="card elev-sm" style="padding:var(--space-4);gap:8px">
-          <h5 style="margin:0">Summary</h5>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px">
-            ${(at.summaryTags||[]).map(tg=>{
-              const tt = tone(SUMMARY_TYPE_HUES[tg.type] || HUES.accent);
-              return `<span class="tag" style="background:${tt.bg};color:${tt.color}">${esc(tg.text)}</span>`;
-            }).join('') || '<span class="text-muted" style="font-size:13px">No tags recorded.</span>'}
-          </div>
-        </div>
-        ${at.notes ? `
-        <div class="card elev-sm" style="padding:var(--space-4);gap:8px">
-          <h5 style="margin:0">Your notes</h5>
-          <p class="text-muted" style="margin:0;font-size:13px">${esc(at.notes)}</p>
-        </div>` : ''}
-        ${at.feedback ? `
-        <div class="card elev-sm" style="padding:var(--space-4);gap:8px">
-          <h5 style="margin:0">Feedback</h5>
-          ${at.feedback.overallSummary ? `<p class="text-muted" style="margin:3px 0 0;font-size:12.5px">${esc(at.feedback.overallSummary)}</p>` : ''}
-          ${(at.feedback.sections||[]).map(s=>{
-            const t = tone(RATING_HUES[s.rating] ?? HUES.accent);
-            return `
-            <div style="margin-top:6px">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-                <span class="card-kicker">${esc(s.title)}</span>
-                <span class="tag" style="background:${t.bg};color:${t.color};font-size:10px">${esc(s.rating||'')}</span>
-              </div>
-              ${s.assessment ? `<p class="text-muted" style="margin:3px 0 0;font-size:12.5px;font-style:italic">${esc(s.assessment)}</p>` : ''}
-              ${(s.bullets||[]).map(b=>`<p class="text-muted" style="margin:3px 0 0;font-size:13px">&#8226; ${esc(b)}</p>`).join('')}
-            </div>
-          `;}).join('')}
-          ${at.feedback.nextTimeTip ? `
-            <div style="margin-top:6px">
-              <span class="card-kicker">Next time</span>
-              <p class="text-muted" style="margin:3px 0 0;font-size:13px">${esc(at.feedback.nextTimeTip)}</p>
-            </div>` : ''}
-        </div>` : ''}
-      </div>
-    </div>
+    ${renderDetailStepper(step)}
+    ${step === 'scene' ? renderDetailScene(sc) : ''}
+    ${step === 'plan' ? (at.plan ? renderPlanSections(at.plan, false) : '<p class="text-muted">No plan recorded for this attempt.</p>') : ''}
+    ${step === 'practice' ? renderDetailPractice(at, sc) : ''}
+    ${step === 'feedback' ? (at.feedback ? `
+      ${at.notes ? `
+      <div class="card elev-sm" style="padding:var(--space-4);gap:6px">
+        <span class="card-kicker">Your notes</span>
+        <p style="margin:0;font-size:13.5px;opacity:0.9">${esc(at.notes)}</p>
+      </div>` : ''}
+      ${renderFeedbackBody(at.feedback)}
+    ` : '<p class="text-muted">No feedback recorded for this attempt.</p>') : ''}
   </div>`;
 }
 
@@ -1345,7 +1380,7 @@ function attachHandlers(){
         const at = DATA.attempts.find(a=>a.id===id);
         if(!at) return;
         if(at.status==='in-progress') resumeAttempt(at);
-        else { historyDetail = id; VIEW = 'detail'; render(); }
+        else openHistoryDetail(id);
       });
     });
     document.querySelectorAll('.btn-resume').forEach(btn=>{
@@ -1366,6 +1401,9 @@ function attachHandlers(){
     document.getElementById('btn-back-home').onclick = goHome;
     const tryBtn = document.getElementById('btn-try-different-detail');
     if(tryBtn) tryBtn.onclick = ()=> reuseScenario(tryBtn.getAttribute('data-scenario'));
+    document.querySelectorAll('.detail-step').forEach(el=>{
+      el.addEventListener('click', ()=>{ historyDetailStep = el.getAttribute('data-step'); render(); });
+    });
   }
   if(VIEW==='settings'){
     const concise = document.getElementById('opt-concise');
