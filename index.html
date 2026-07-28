@@ -994,60 +994,37 @@ function renderFeedback(){
 }
 
 /* ---------------- Screen: Home ---------------- */
-function groupAttempts(){
-  const groups = {};
-  DATA.scenarios.forEach(s=>{ groups[s.groupKey] = { meta: s, attempts: [] }; });
-  DATA.attempts.slice().sort((a,b)=>b.createdAt-a.createdAt).forEach(at=>{
-    const sc = DATA.scenarios.find(s=>s.id===at.scenarioId);
-    if(!sc) return;
-    if(!groups[sc.groupKey]) groups[sc.groupKey] = { meta: sc, attempts: [] };
-    groups[sc.groupKey].attempts.push(at);
-  });
-  return Object.values(groups).filter(g=>g.attempts.length>0)
-    .sort((a,b)=> Math.max(...b.attempts.map(x=>x.createdAt)) - Math.max(...a.attempts.map(x=>x.createdAt)) );
-}
-
-function renderScenarioGroups(groupList){
-  return groupList.map(g=>`
-    <section style="margin-bottom:14px">
-      <span class="card-kicker">${esc(g.meta.name)} &middot; ${esc(g.meta.title)}</span>
-      <p class="text-muted" style="font-size:13px;margin:4px 0 14px;max-width:640px">${esc(g.meta.goal)}</p>
-      <div class="attempt-grid">
-        ${g.attempts.map(at=>{
-          const isInProgress = at.status === 'in-progress';
-          const label = isInProgress ? 'In progress' : (at.outcome || 'Completed');
-          const t = tone(outcomeHue(at.status, at.outcome));
-          return `
-          <div class="card elev-sm attempt-card" data-attempt="${at.id}">
-            <span class="attempt-date">${new Date(at.createdAt).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}</span>
-            <h5 style="margin:0">${esc(frameworkLabel(at.framework))}</h5>
-            <span class="tag" style="align-self:flex-start;background:${t.bg};color:${t.color}">${esc(label)}</span>
-            ${isInProgress
-              ? `<button class="btn btn-primary btn-resume" data-attempt="${at.id}" style="align-self:flex-start;font-size:12px;padding:6px 12px">Resume</button>`
-              : `<button class="btn btn-ghost btn-try-different" data-scenario="${g.meta.id}" style="align-self:flex-start;font-size:12px;padding:2px 4px">Try a different approach</button>`}
-          </div>`;
-        }).join('')}
-      </div>
-    </section>
-  `).join('');
+function renderAttemptCard(at){
+  const isInProgress = at.status === 'in-progress';
+  const label = isInProgress ? 'In progress' : (at.outcome || 'Completed');
+  const t = tone(outcomeHue(at.status, at.outcome));
+  return `
+  <div class="card elev-sm attempt-card" data-attempt="${at.id}">
+    <span class="attempt-date">${new Date(at.createdAt).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}</span>
+    <h5 style="margin:0">${esc(frameworkLabel(at.framework))}</h5>
+    <span class="tag" style="align-self:flex-start;background:${t.bg};color:${t.color}">${esc(label)}</span>
+    ${isInProgress
+      ? `<button class="btn btn-primary btn-resume" data-attempt="${at.id}" style="align-self:flex-start;font-size:12px;padding:6px 12px">Resume</button>`
+      : `<button class="btn btn-ghost btn-try-different" data-scenario="${esc(at.scenarioId)}" style="align-self:flex-start;font-size:12px;padding:2px 4px">Try a different approach</button>`}
+  </div>`;
 }
 
 function renderHome(){
-  const groupList = groupAttempts();
+  const attempts = DATA.attempts.slice().sort((a,b)=>b.createdAt-a.createdAt);
   return `
   <div class="screen">
     <div style="display:flex;align-items:center;gap:16px">
       <div style="flex:1">
         <h1 style="font-size:26px">Your negotiations</h1>
-        <p class="text-muted" style="margin:0;font-size:14px">Every simulation you save lands here, grouped by scenario.</p>
+        <p class="text-muted" style="margin:0;font-size:14px">Every simulation you save lands here.</p>
       </div>
       <button class="btn btn-primary" id="btn-new-scenario"><i class="ph-bold ph-plus-circle"></i> New scenario</button>
     </div>
-    ${groupList.length===0 ? `
+    ${attempts.length===0 ? `
       <div class="card elev-sm" style="padding:var(--space-6);gap:12px;align-items:flex-start">
         <p style="margin:0;font-size:14.5px">No negotiations yet.</p>
         <button class="btn btn-primary" id="btn-first-scenario">Start your first negotiation</button>
-      </div>` : renderScenarioGroups(groupList)}
+      </div>` : `<div class="attempt-grid">${attempts.map(renderAttemptCard).join('')}</div>`}
   </div>`;
 }
 
